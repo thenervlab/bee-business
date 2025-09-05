@@ -1,0 +1,30 @@
+# Byte-compiled / cache files
+__pycache__/
+*.py[cod]
+*.so
+
+# Streamlit
+.streamlit/
+
+# Virtual environments
+.venv/
+env/
+venv/
+
+# Data files (don’t version-control raw or sensitive data)
+data/*.csv
+data/*.xlsx
+!data/sample_data.csv
+
+# OS / Editor files
+.DS_Store
+Thumbs.db
+*.swp
+
+# Jupyter notebooks checkpoints
+.ipynb_checkpoints/
+
+# Logs
+*.log
+data/sample_data.csv
+.vscode/settings.json
