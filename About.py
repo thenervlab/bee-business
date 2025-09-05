@@ -2,15 +2,15 @@ import streamlit as st
 
 # ---- App Config ----
 st.set_page_config(
-    page_title="Nesting Box Citizen Science",
-    page_icon="🪲",
+    page_title="Bee Boxes",
+    page_icon="🐝",
     layout="wide"
 )
 
 # ---- Landing Page ----
-st.title("🪲 Nesting Box Citizen Science Project")
+st.title("🐝 The Bee Box!")
 st.write("""
-Welcome to the citizen science project!  
+Welcome to the Bee Box!  
 This app helps you record observations, explore data, and learn more about the project.
 """)
 
