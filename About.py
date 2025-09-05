@@ -8,9 +8,9 @@ st.set_page_config(
 )
 
 # ---- Landing Page ----
-st.title("🐝 The Bee Box!")
+st.title("🐝 Welcome to the Bee Box!")
 st.write("""
-Welcome to the Bee Box!  
+
 This app helps you record observations, explore data, and learn more about the project.
 """)
 

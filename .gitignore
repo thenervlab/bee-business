@@ -28,3 +28,4 @@ Thumbs.db
 *.log
 data/sample_data.csv
 .vscode/settings.json
+secrets.json
