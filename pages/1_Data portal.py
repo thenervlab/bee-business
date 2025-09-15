@@ -122,12 +122,12 @@ with st.form("observation_form", clear_on_submit=True):
 
     # --- Section 2: observation date/time/image ---
     st.header("Observation details")
-    dcol1, dcol2, dcol3 = st.columns([2,2,3])
-    with dcol1:
+    # Stack date and time vertically in left column, image in right column with ratio 1:2
+    dcol_left, dcol_right = st.columns([1, 2])
+    with dcol_left:
         obs_date = st.date_input("Obs. date*", value=date.today(), key="obs_date")
-    with dcol2:
         obs_time = st.time_input("Obs. time*", value=datetime.now().time(), key="obs_time")
-    with dcol3:
+    with dcol_right:
         photo = st.file_uploader("Image", type=["jpg", "jpeg", "png"], key="photo")
 
     # --- Section 3: grid for nest holes (rows A-K) ---
@@ -169,24 +169,26 @@ with st.form("observation_form", clear_on_submit=True):
             st.markdown(f"**{hole_label}**")
         with c1:
             # Use species dropdown sourced from data/species_names.csv (fallback to historical species)
-            if species_list:
-                # Provide a non-empty label but hide it visually for accessibility
-                label = f"Scientific name for hole {hole_label}"
-                try:
-                    default_index = species_list.index(defaults["scientific_name"]) if defaults["scientific_name"] in species_list else 0
-                except Exception:
-                    default_index = 0
-                sci = st.selectbox(label, species_list, index=default_index, key=f"sci_{hole_label}", label_visibility='collapsed')
-            else:
-                sci = st.text_input(f"sci_{hole_label}", value=defaults["scientific_name"], key=f"sci_{hole_label}")
+            # Always present a selectbox-only interface with a blank default option
+            local_species = species_list.copy() if species_list else []
+            if "" not in local_species:
+                local_species.insert(0, "")
+            # Provide a non-empty label but hide it visually for accessibility
+            label = f"Scientific name for hole {hole_label}"
+            try:
+                # If defaults specify a value, try to set that index; otherwise default to the empty option (index 0)
+                default_index = local_species.index(defaults["scientific_name"]) if defaults["scientific_name"] in local_species else 0
+            except Exception:
+                default_index = 0
+            sci = st.selectbox(label, local_species, index=default_index, key=f"sci_{hole_label}", label_visibility='collapsed')
         with c2:
-            nm = st.number_input(f"males_{hole_label}", min_value=0, step=1, value=defaults["num_males"], key=f"males_{hole_label}")
+            nm = st.number_input(f"males for {hole_label}", min_value=0, step=1, value=defaults["num_males"], key=f"males_{hole_label}", label_visibility='collapsed')
         with c3:
-            nf = st.number_input(f"fem_{hole_label}", min_value=0, step=1, value=defaults["num_females"], key=f"fem_{hole_label}")
+            nf = st.number_input(f"females for {hole_label}", min_value=0, step=1, value=defaults["num_females"], key=f"fem_{hole_label}", label_visibility='collapsed')
         with c4:
-            sb = st.multiselect(f"sb_{hole_label}", ["Solitary", "Social", "Parasitic"], default=defaults["social_behaviour"], key=f"sb_{hole_label}")
+            sb = st.multiselect(f"social_behaviour for {hole_label}", ["Solitary", "Social", "Parasitic"], default=defaults["social_behaviour"], key=f"sb_{hole_label}", label_visibility='collapsed')
         with c5:
-            notes = st.text_input(f"notes_{hole_label}", key=f"notes_{hole_label}")
+            notes = st.text_input(f"notes for {hole_label}", key=f"notes_{hole_label}", label_visibility='collapsed')
 
         hole_values[hole_label] = {
             "scientific_name": sci,
@@ -196,7 +198,10 @@ with st.form("observation_form", clear_on_submit=True):
             "notes": notes
         }
 
-    submitted = st.form_submit_button("Submit Observation")
+    # Right-align the submit button by placing it into a right-hand column
+    btn_col1, btn_col2 = st.columns([3, 1])
+    with btn_col2:
+        submitted = st.form_submit_button("Submit Observation")
 
 if submitted:
     # Validate required top-level fields
