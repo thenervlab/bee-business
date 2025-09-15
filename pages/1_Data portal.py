@@ -23,18 +23,65 @@ dbx = dropbox.Dropbox(
 )
 
 # --- Observer → Hotel mapping ---
-OBSERVER_HOTELS = {
+# Default fallbacks (used if no CSV is provided or CSV is malformed)
+DEFAULT_OBSERVER_HOTELS = {
     "Alice": ["H001", "H002"],
     "Bob": ["H003"],
     "Charlie": ["H004", "H005"]
 }
-HOTEL_HOLES = {
+DEFAULT_HOTEL_HOLES = {
     "H001": ["1", "2", "3"],
     "H002": ["A", "B"],
     "H003": ["Left", "Right"],
     "H004": ["X", "Y"],
     "H005": ["Alpha", "Beta"]
 }
+
+# Attempt to load a single long-form CSV with columns (observer, hotel, hole).
+# Expected path: data/observer_hotel_holes.csv (case-insensitive column names accepted).
+OBSERVER_HOTELS = DEFAULT_OBSERVER_HOTELS.copy()
+HOTEL_HOLES = DEFAULT_HOTEL_HOLES.copy()
+oh_path = os.path.join("data", "observer_hotel_holes.csv")
+if os.path.exists(oh_path):
+    try:
+        oh_df = pd.read_csv(oh_path)
+        # Normalize column names to lowercase for detection
+        col_map = {c.lower(): c for c in oh_df.columns}
+        # find best matches for observer, hotel, hole
+        obs_col = next((col_map[k] for k in col_map if "observer" in k or "observer" == k), None)
+        hotel_col = next((col_map[k] for k in col_map if "hotel" in k or "hotel_code" in k), None)
+        hole_col = next((col_map[k] for k in col_map if "hole" in k or "nest" in k), None)
+
+        if not (obs_col and hotel_col and hole_col):
+            st.warning(f"{oh_path} is missing required columns (observer, hotel, hole). Using defaults.")
+        else:
+            OBSERVER_HOTELS = {}
+            HOTEL_HOLES = {}
+            for _, row in oh_df.iterrows():
+                obs = str(row.get(obs_col, "")).strip()
+                hotel = str(row.get(hotel_col, "")).strip()
+                hole = str(row.get(hole_col, "")).strip()
+                if not obs or not hotel:
+                    continue
+                OBSERVER_HOTELS.setdefault(obs, [])
+                if hotel not in OBSERVER_HOTELS[obs]:
+                    OBSERVER_HOTELS[obs].append(hotel)
+                HOTEL_HOLES.setdefault(hotel, [])
+                if hole and hole not in HOTEL_HOLES[hotel]:
+                    HOTEL_HOLES[hotel].append(hole)
+            # sort lists for deterministic ordering
+            for k in OBSERVER_HOTELS:
+                try:
+                    OBSERVER_HOTELS[k] = sorted(OBSERVER_HOTELS[k])
+                except Exception:
+                    pass
+            for k in HOTEL_HOLES:
+                try:
+                    HOTEL_HOLES[k] = sorted(HOTEL_HOLES[k], key=lambda x: (len(x), x))
+                except Exception:
+                    pass
+    except Exception as e:
+        st.warning(f"Failed to load {oh_path}: {e}. Using defaults.")
 
 DATA_FILE = "observations.csv"
 
@@ -77,30 +124,6 @@ if not species_list and not df.empty and "scientific_name" in df.columns:
         species_list = sorted(df["scientific_name"].dropna().astype(str).str.strip().unique().tolist())
     except Exception:
         species_list = []
-
-# Optionally override HOTEL_HOLES from data/hotel_holes.csv (expected columns: observer,hotel_code,nest_hole)
-holes_csv = os.path.join("data", "hotel_holes.csv")
-if os.path.exists(holes_csv):
-    try:
-        hh_df = pd.read_csv(holes_csv)
-        # Build mapping hotel_code -> sorted unique list of holes
-        HOTEL_HOLES = {}
-        for _, row in hh_df.iterrows():
-            hcode = str(row.get("hotel_code", "")).strip()
-            hole = str(row.get("nest_hole", "")).strip()
-            if not hcode or not hole:
-                continue
-            HOTEL_HOLES.setdefault(hcode, [])
-            if hole not in HOTEL_HOLES[hcode]:
-                HOTEL_HOLES[hcode].append(hole)
-        # Optionally sort holes if they're single letters/numbers
-        for h, holes in HOTEL_HOLES.items():
-            try:
-                HOTEL_HOLES[h] = sorted(holes, key=lambda x: (len(x), x))
-            except Exception:
-                HOTEL_HOLES[h] = holes
-    except Exception as e:
-        st.warning(f"Failed to load data/hotel_holes.csv: {e}")
 
 st.title("📝 Bee Hotel Observation Portal")
 
@@ -198,10 +221,13 @@ with st.form("observation_form", clear_on_submit=True):
             "notes": notes
         }
 
-    # Right-align the submit button by placing it into a right-hand column
-    btn_col1, btn_col2 = st.columns([3, 1])
-    with btn_col2:
-        submitted = st.form_submit_button("Submit Observation")
+    # Right-align the submit button using a narrow right column and a right-aligned div
+    btn_col_left, btn_col_spacer, btn_col_right = st.columns([6, 1, 1])
+    with btn_col_right:
+        # Use a small HTML wrapper to force the button to the right edge of the column
+        st.markdown("<div style='text-align: right;'>", unsafe_allow_html=True)
+        submitted = st.form_submit_button("Submit")
+        st.markdown("</div>", unsafe_allow_html=True)
 
 if submitted:
     # Validate required top-level fields
