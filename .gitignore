@@ -29,3 +29,4 @@ Thumbs.db
 data/sample_data.csv
 .vscode/settings.json
 secrets.json
+dropbox-token.py
