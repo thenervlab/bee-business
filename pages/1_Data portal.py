@@ -8,19 +8,61 @@ import dropbox
 import json
 import os
 
-# --- Load Dropbox token ---
-with open("secrets.json") as f:
-    secrets = json.load(f)
+# --- Load secrets: prefer Streamlit secrets, then environment, then local secrets.json ---
+def load_secrets():
+    # Try Streamlit secrets (works on Streamlit Community Cloud)
+    try:
+        ss = {}
+        # st.secrets behaves like a dict; use .get to avoid KeyError
+        ss_keys = ["DROPBOX_APP_KEY", "DROPBOX_APP_SECRET", "DROPBOX_REFRESH_TOKEN", "OBSERVER_PASSPHRASES"]
+        for k in ss_keys:
+            try:
+                ss[k] = st.secrets.get(k)
+            except Exception:
+                ss[k] = None
+        # If at least the Dropbox keys are present, return
+        if ss.get("DROPBOX_APP_KEY") and ss.get("DROPBOX_APP_SECRET") and ss.get("DROPBOX_REFRESH_TOKEN"):
+            return ss
+    except Exception:
+        pass
 
-APP_KEY = secrets["DROPBOX_APP_KEY"]
-APP_SECRET = secrets["DROPBOX_APP_SECRET"]
-REFRESH_TOKEN = secrets["DROPBOX_REFRESH_TOKEN"]
+    # Next, try environment variables
+    env_keys = ["DROPBOX_APP_KEY", "DROPBOX_APP_SECRET", "DROPBOX_REFRESH_TOKEN", "OBSERVER_PASSPHRASES"]
+    env = {k: os.environ.get(k) for k in env_keys}
+    if env.get("DROPBOX_APP_KEY") and env.get("DROPBOX_APP_SECRET") and env.get("DROPBOX_REFRESH_TOKEN"):
+        return env
 
-dbx = dropbox.Dropbox(
-    app_key=APP_KEY,
-    app_secret=APP_SECRET,
-    oauth2_refresh_token=REFRESH_TOKEN
-)
+    # Fallback: local secrets.json (for local dev only)
+    if os.path.exists("secrets.json"):
+        try:
+            with open("secrets.json") as f:
+                return json.load(f)
+        except Exception:
+            pass
+
+    # Nothing found
+    return {}
+
+secrets = load_secrets()
+
+APP_KEY = secrets.get("DROPBOX_APP_KEY")
+APP_SECRET = secrets.get("DROPBOX_APP_SECRET")
+REFRESH_TOKEN = secrets.get("DROPBOX_REFRESH_TOKEN")
+
+# Initialize Dropbox client only if credentials are available
+dbx = None
+if APP_KEY and APP_SECRET and REFRESH_TOKEN:
+    try:
+        dbx = dropbox.Dropbox(
+            app_key=APP_KEY,
+            app_secret=APP_SECRET,
+            oauth2_refresh_token=REFRESH_TOKEN
+        )
+    except Exception as e:
+        st.warning(f"Failed to initialize Dropbox client: {e}")
+        dbx = None
+else:
+    st.warning("Dropbox credentials not found in Streamlit secrets or environment; photo uploads will be disabled.")
 
 # --- Observer → Hotel mapping ---
 # Default fallbacks (used if no CSV is provided or CSV is malformed)
@@ -130,24 +172,45 @@ st.title("📝 Bee Hotel Observation Portal")
 # --- Top-level observer selection and passphrase gate ---
 observer = st.selectbox("Recorded by*", list(OBSERVER_HOTELS.keys()), key="observer")
 
-# Load observer passphrases (prefer environment variable, fall back to CSV)
+# Load observer passphrases (prefer Streamlit secrets, then environment variable, fall back to CSV)
 passphrases = {}
-env_val = os.environ.get("OBSERVER_PASSPHRASES")
-if env_val:
-    try:
-        import json as _json
-        parsed = _json.loads(env_val)
-        if isinstance(parsed, dict):
-            # normalize keys to strings
-            passphrases = {str(k): str(v) for k, v in parsed.items()}
-        else:
-            st.warning("Environment variable OBSERVER_PASSPHRASES is not a JSON object. Falling back to CSV.")
-            env_val = None
-    except Exception as e:
-        st.warning(f"Failed to parse OBSERVER_PASSPHRASES env var: {e}. Falling back to CSV.")
-        env_val = None
 
-if not env_val:
+# 1) Try Streamlit secrets
+try:
+    raw = None
+    try:
+        raw = st.secrets.get("OBSERVER_PASSPHRASES")
+    except Exception:
+        raw = None
+
+    if raw:
+        if isinstance(raw, dict):
+            passphrases = {str(k): str(v) for k, v in raw.items()}
+        else:
+            try:
+                import json as _json
+                parsed = _json.loads(str(raw))
+                if isinstance(parsed, dict):
+                    passphrases = {str(k): str(v) for k, v in parsed.items()}
+            except Exception:
+                pass
+except Exception:
+    pass
+
+# 2) Environment variable (JSON string)
+if not passphrases:
+    env_val = os.environ.get("OBSERVER_PASSPHRASES")
+    if env_val:
+        try:
+            import json as _json
+            parsed = _json.loads(env_val)
+            if isinstance(parsed, dict):
+                passphrases = {str(k): str(v) for k, v in parsed.items()}
+        except Exception:
+            st.warning("Environment variable OBSERVER_PASSPHRASES is not valid JSON. Falling back to CSV.")
+
+# 3) CSV fallback
+if not passphrases:
     pass_file = os.path.join("data", "observer_passphrases.csv")
     if os.path.exists(pass_file):
         try:
