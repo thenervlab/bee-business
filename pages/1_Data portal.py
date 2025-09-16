@@ -127,107 +127,166 @@ if not species_list and not df.empty and "scientific_name" in df.columns:
 
 st.title("📝 Bee Hotel Observation Portal")
 
-# --- Top-level observer & hotel selection ---
+# --- Top-level observer selection and passphrase gate ---
 observer = st.selectbox("Recorded by*", list(OBSERVER_HOTELS.keys()), key="observer")
-available_hotels = OBSERVER_HOTELS.get(observer, [])
-hotel_code = st.selectbox("Hotel code*", available_hotels, key="hotel_code_top")
 
-with st.form("observation_form", clear_on_submit=True):
-    # --- Section 1: basic metadata (moved to top of form for submission consistency) ---
-    # st.header("Observer & Hotel")
-    # col1, col2 = st.columns(2)
-    # with col1:
-    #     # Keep observer readonly inside form (reflect top selection)
-    #     st.text_input("Recorded by", value=observer, disabled=True, key="observer_in_form")
-    # with col2:
-    #     # Show hotel code (read-only) inside form to avoid duplicate editable fields
-    #     st.text_input("Hotel code", value=hotel_code, disabled=True, key="hotel_in_form")
+# Load observer passphrases (prefer environment variable, fall back to CSV)
+passphrases = {}
+env_val = os.environ.get("OBSERVER_PASSPHRASES")
+if env_val:
+    try:
+        import json as _json
+        parsed = _json.loads(env_val)
+        if isinstance(parsed, dict):
+            # normalize keys to strings
+            passphrases = {str(k): str(v) for k, v in parsed.items()}
+        else:
+            st.warning("Environment variable OBSERVER_PASSPHRASES is not a JSON object. Falling back to CSV.")
+            env_val = None
+    except Exception as e:
+        st.warning(f"Failed to parse OBSERVER_PASSPHRASES env var: {e}. Falling back to CSV.")
+        env_val = None
 
-    # --- Section 2: observation date/time/image ---
-    st.header("Observation details")
-    # Stack date and time vertically in left column, image in right column with ratio 1:2
-    dcol_left, dcol_right = st.columns([1, 2])
-    with dcol_left:
-        obs_date = st.date_input("Obs. date*", value=date.today(), key="obs_date")
-        obs_time = st.time_input("Obs. time*", value=datetime.now().time(), key="obs_time")
-    with dcol_right:
-        photo = st.file_uploader("Image", type=["jpg", "jpeg", "png"], key="photo")
+if not env_val:
+    pass_file = os.path.join("data", "observer_passphrases.csv")
+    if os.path.exists(pass_file):
+        try:
+            pf = pd.read_csv(pass_file)
+            col_map = {c.lower(): c for c in pf.columns}
+            pass_col = next((col_map[k] for k in col_map if "pass" in k or "phrase" in k), None)
+            obs_col = next((col_map[k] for k in col_map if "observer" in k or "observer" == k), None)
+            if pass_col and obs_col:
+                for _, row in pf.iterrows():
+                    obs = str(row.get(obs_col, "")).strip()
+                    pw = str(row.get(pass_col, "")).strip()
+                    if obs:
+                        passphrases[obs] = pw
+            else:
+                st.info(f"{pass_file} found but missing expected columns (observer, passphrase). Passphrase gating disabled.")
+        except Exception as e:
+            st.warning(f"Failed to read {pass_file}: {e}. Passphrase gating disabled.")
 
-    # --- Section 3: grid for nest holes (rows A-K) ---
-    st.header("Nest holes")
-    hole_values = {}
+# Prepare gating state
+hotel_code = None
+submitted = False
 
-    # Column headers for grid (ratios: hole, sci, males, females, social_behaviour, notes)
-    # Desired relative widths: sci=1, males=0.5, females=0.5, sb=1, notes=1 -> approximate with integers
-    rcols = st.columns([1, 4, 2, 2, 4, 4])
-    rcols[0].markdown("**Hole**")
-    rcols[1].markdown("**Scientific name**")
-    rcols[2].markdown("**# Males**")
-    rcols[3].markdown("**# Females**")
-    rcols[4].markdown("**Social behaviours**")
-    rcols[5].markdown("**Notes**")
+# Ask for passphrase (only if there is a selected observer)
+if observer:
+    pass_key = f"pass_input_{observer}"
+    unlock_key = f"unlock_{observer}"
+    verified_key = f"pass_ok_{observer}"
+    # show pass input and unlock button
+    st.write("Enter your unique passphrase to unlock the data portal for this observer.")
+    pw = st.text_input("Passphrase", type="password", key=pass_key)
+    if st.button("Unlock", key=unlock_key):
+        expected = passphrases.get(observer)
+        if expected is None:
+            st.warning("No passphrase configured for this observer. Contact an admin to enable passphrase protection.")
+            st.session_state[verified_key] = False
+        elif pw == expected:
+            st.session_state[verified_key] = True
+            st.success("Passphrase accepted — proceed to select your hotel.")
+        else:
+            st.session_state[verified_key] = False
+            st.error("Incorrect passphrase. Try again.")
 
-    # Determine holes for selected hotel (fallback to A-K)
-    holes_for_hotel = HOTEL_HOLES.get(hotel_code) if hotel_code else None
-    if not holes_for_hotel:
-        holes_for_hotel = [chr(i) for i in range(ord('A'), ord('K')+1)]
+# If verified, show hotel selector
+if observer and st.session_state.get(f"pass_ok_{observer}", False):
+    available_hotels = OBSERVER_HOTELS.get(observer, [])
+    hotel_code = st.selectbox("Hotel code*", available_hotels, key="hotel_code_top")
 
-    for hole_label in holes_for_hotel:
-        c0, c1, c2, c3, c4, c5 = st.columns([1, 4, 2, 2, 4, 4])
+# Only when hotel_code is selected do we show the observation form
+if hotel_code:
+    with st.form("observation_form", clear_on_submit=True):
 
-        # Prepopulate defaults if possible
-        defaults = {"scientific_name": "", "num_males": 0, "num_females": 0, "social_behaviour": []}
-        if not df.empty and hotel_code:
-            subset = df[(df["hotel_code"] == hotel_code) & (df["nest_hole"] == hole_label)]
-            if not subset.empty:
-                last_entry = subset.iloc[-1]
-                defaults = {
-                    "scientific_name": last_entry.get("scientific_name", ""),
-                    "num_males": int(last_entry.get("num_males", 0)),
-                    "num_females": int(last_entry.get("num_females", 0)),
-                    "social_behaviour": last_entry.get("social_behaviour", "").split(", ") if last_entry.get("social_behaviour") else []
-                }
+        # --- Section 2: observation date/time/image ---
+        st.header("Observation details")
+        # Show observer and hotel inside form as read-only
+        # col1, col2 = st.columns([1, 2])
+        # with col1:
+        #     st.text_input("Recorded by", value=observer, disabled=True, key="observer_in_form")
+        # with col2:
+        #     st.text_input("Hotel code", value=hotel_code, disabled=True, key="hotel_in_form")
+        # Stack date and time vertically in left column, image in right column with ratio 1:2
+        dcol_left, dcol_right = st.columns([1, 2])
+        with dcol_left:
+            obs_date = st.date_input("Obs. date*", value=date.today(), key="obs_date")
+            obs_time = st.time_input("Obs. time*", value=datetime.now().time(), key="obs_time")
+        with dcol_right:
+            photo = st.file_uploader("Image", type=["jpg", "jpeg", "png"], key="photo")
 
-        with c0:
-            st.markdown(f"**{hole_label}**")
-        with c1:
-            # Use species dropdown sourced from data/species_names.csv (fallback to historical species)
-            # Always present a selectbox-only interface with a blank default option
-            local_species = species_list.copy() if species_list else []
-            if "" not in local_species:
-                local_species.insert(0, "")
-            # Provide a non-empty label but hide it visually for accessibility
-            label = f"Scientific name for hole {hole_label}"
-            try:
-                # If defaults specify a value, try to set that index; otherwise default to the empty option (index 0)
-                default_index = local_species.index(defaults["scientific_name"]) if defaults["scientific_name"] in local_species else 0
-            except Exception:
-                default_index = 0
-            sci = st.selectbox(label, local_species, index=default_index, key=f"sci_{hole_label}", label_visibility='collapsed')
-        with c2:
-            nm = st.number_input(f"males for {hole_label}", min_value=0, step=1, value=defaults["num_males"], key=f"males_{hole_label}", label_visibility='collapsed')
-        with c3:
-            nf = st.number_input(f"females for {hole_label}", min_value=0, step=1, value=defaults["num_females"], key=f"fem_{hole_label}", label_visibility='collapsed')
-        with c4:
-            sb = st.multiselect(f"social_behaviour for {hole_label}", ["Solitary", "Social", "Parasitic"], default=defaults["social_behaviour"], key=f"sb_{hole_label}", label_visibility='collapsed')
-        with c5:
-            notes = st.text_input(f"notes for {hole_label}", key=f"notes_{hole_label}", label_visibility='collapsed')
+        # --- Section 3: grid for nest holes (rows A-K or from HOTEL_HOLES) ---
+        st.header("Nest holes")
+        hole_values = {}
 
-        hole_values[hole_label] = {
-            "scientific_name": sci,
-            "num_males": nm,
-            "num_females": nf,
-            "social_behaviour": sb,
-            "notes": notes
-        }
+        # Column headers for grid (ratios: hole, sci, males, females, social_behaviour, notes)
+        rcols = st.columns([1, 4, 2, 2, 4, 4])
+        rcols[0].markdown("**Hole**")
+        rcols[1].markdown("**Scientific name**")
+        rcols[2].markdown("**# Males**")
+        rcols[3].markdown("**# Females**")
+        rcols[4].markdown("**Social behaviours**")
+        rcols[5].markdown("**Notes**")
 
-    # Right-align the submit button using a narrow right column and a right-aligned div
-    btn_col_left, btn_col_spacer, btn_col_right = st.columns([6, 1, 1])
-    with btn_col_right:
-        # Use a small HTML wrapper to force the button to the right edge of the column
-        st.markdown("<div style='text-align: right;'>", unsafe_allow_html=True)
-        submitted = st.form_submit_button("Submit")
-        st.markdown("</div>", unsafe_allow_html=True)
+        # Determine holes for selected hotel (fallback to A-K)
+        holes_for_hotel = HOTEL_HOLES.get(hotel_code) if hotel_code else None
+        if not holes_for_hotel:
+            holes_for_hotel = [chr(i) for i in range(ord('A'), ord('K')+1)]
+
+        for hole_label in holes_for_hotel:
+            c0, c1, c2, c3, c4, c5 = st.columns([1, 4, 2, 2, 4, 4])
+
+            # Prepopulate defaults if possible
+            defaults = {"scientific_name": "", "num_males": 0, "num_females": 0, "social_behaviour": []}
+            if not df.empty and hotel_code:
+                subset = df[(df["hotel_code"] == hotel_code) & (df["nest_hole"] == hole_label)]
+                if not subset.empty:
+                    last_entry = subset.iloc[-1]
+                    defaults = {
+                        "scientific_name": last_entry.get("scientific_name", ""),
+                        "num_males": int(last_entry.get("num_males", 0)),
+                        "num_females": int(last_entry.get("num_females", 0)),
+                        "social_behaviour": last_entry.get("social_behaviour", "").split(", ") if last_entry.get("social_behaviour") else []
+                    }
+
+            with c0:
+                st.markdown(f"**{hole_label}**")
+            with c1:
+                # Use species dropdown sourced from data/species_names.csv (fallback to historical species)
+                local_species = species_list.copy() if species_list else []
+                if "" not in local_species:
+                    local_species.insert(0, "")
+                label = f"Scientific name for hole {hole_label}"
+                try:
+                    default_index = local_species.index(defaults["scientific_name"]) if defaults["scientific_name"] in local_species else 0
+                except Exception:
+                    default_index = 0
+                sci = st.selectbox(label, local_species, index=default_index, key=f"sci_{hole_label}", label_visibility='collapsed')
+            with c2:
+                nm = st.number_input(f"males for {hole_label}", min_value=0, step=1, value=defaults["num_males"], key=f"males_{hole_label}", label_visibility='collapsed')
+            with c3:
+                nf = st.number_input(f"females for {hole_label}", min_value=0, step=1, value=defaults["num_females"], key=f"fem_{hole_label}", label_visibility='collapsed')
+            with c4:
+                sb = st.multiselect(f"social_behaviour for {hole_label}", ["Solitary", "Social", "Parasitic"], default=defaults["social_behaviour"], key=f"sb_{hole_label}", label_visibility='collapsed')
+            with c5:
+                notes = st.text_input(f"notes for {hole_label}", key=f"notes_{hole_label}", label_visibility='collapsed')
+
+            hole_values[hole_label] = {
+                "scientific_name": sci,
+                "num_males": nm,
+                "num_females": nf,
+                "social_behaviour": sb,
+                "notes": notes
+            }
+
+        # Right-align the submit button using a narrow right column and a right-aligned div
+        btn_col_left, btn_col_spacer, btn_col_right = st.columns([6, 1, 1])
+        with btn_col_right:
+            st.markdown("<div style='text-align: right;'>", unsafe_allow_html=True)
+            submitted = st.form_submit_button("Submit")
+            st.markdown("</div>", unsafe_allow_html=True)
+
+    
 
 if submitted:
     # Validate required top-level fields
@@ -345,6 +404,16 @@ if submitted:
                         combined.to_csv(DATA_FILE, index=False, quoting=csv.QUOTE_MINIMAL)
                 else:
                     all_df.to_csv(DATA_FILE, index=False, quoting=csv.QUOTE_MINIMAL)
+                # Also upload the combined master CSV to Dropbox under /observations/observations.csv
+                try:
+                    try:
+                        master_df = existing_df if (os.path.exists(DATA_FILE) and not existing_df.empty) else all_df
+                    except Exception:
+                        master_df = all_df
+                    csv_bytes = master_df.to_csv(index=False, quoting=csv.QUOTE_MINIMAL).encode('utf-8')
+                    dbx.files_upload(csv_bytes, '/observations/observations.csv', mode=dropbox.files.WriteMode.overwrite)
+                except Exception as e:
+                    st.warning(f"Failed to upload master observations.csv to Dropbox: {e}")
                 st.success(f"✅ Recorded {len(rows_to_save)} observation(s) for hotel {hotel_code}")
                 st.json(all_df.to_dict(orient="records")[0] if len(all_df) == 1 else all_df.to_dict(orient="records"))
             except Exception as e:
