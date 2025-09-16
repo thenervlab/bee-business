@@ -332,6 +332,15 @@ if dbx is not None:
         # Any error with Dropbox should not break the app — keep local df
         pass
 
+    # Run a full reconciliation on startup to ensure the deployed instance builds the authoritative master
+    try:
+        reconciled = reconcile_and_upload_master(dbx, local_path=DATA_FILE)
+        if isinstance(reconciled, pd.DataFrame) and not reconciled.empty:
+            df = reconciled
+    except Exception:
+        # If reconciliation fails, keep whatever df we already loaded
+        pass
+
 # Build species list from data/species_names.csv if present, otherwise fall back to historical data
 species_file = os.path.join("data", "species_names.csv")
 species_list = []
@@ -647,7 +656,6 @@ if hotel_code:
             st.markdown("</div>", unsafe_allow_html=True)
 
     
-
 if submitted:
     # Validate required top-level fields
     if not observer or not hotel_code:
