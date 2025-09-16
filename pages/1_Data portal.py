@@ -192,6 +192,125 @@ def safe_read_csv(path):
 
 df = safe_read_csv(DATA_FILE)
 
+def reconcile_and_upload_master(dbx_client, local_path=DATA_FILE):
+    """Reconcile local observations file with per-observation CSVs stored in Dropbox.
+    This function:
+    - Reads the local `local_path` safely
+    - Attempts to list and download all CSVs under `/observations/csv/` on Dropbox
+    - Optionally reads existing remote master `/observations/observations.csv`
+    - Concatenates all available rows, deduplicates by `obs_id` preferring the latest by `submission_time`,
+      writes the authoritative local file, and uploads it to Dropbox as `/observations/observations.csv`.
+    Returns the authoritative DataFrame (may be empty DataFrame if nothing available).
+    """
+    # Start with local data
+    local_df = safe_read_csv(local_path)
+
+    remote_rows = []
+    if dbx_client is not None:
+        try:
+            # Gather per-observation CSVs
+            folder_path = '/observations/csv'
+            has_more = True
+            cursor = None
+            entries = []
+            try:
+                res = dbx_client.files_list_folder(folder_path)
+                entries.extend(res.entries)
+                cursor = getattr(res, 'cursor', None)
+                has_more = getattr(res, 'has_more', False)
+                while has_more:
+                    res = dbx_client.files_list_folder_continue(cursor)
+                    entries.extend(res.entries)
+                    cursor = getattr(res, 'cursor', None)
+                    has_more = getattr(res, 'has_more', False)
+            except dropbox.exceptions.ApiError:
+                # Folder may not exist; that's fine
+                entries = []
+
+            for e in entries:
+                try:
+                    name = getattr(e, 'name', '')
+                    if name.lower().endswith('.csv'):
+                        md, resp = dbx_client.files_download(f"{folder_path}/{name}")
+                        txt = resp.content.decode('utf-8')
+                        try:
+                            df_piece = pd.read_csv(StringIO(txt))
+                            remote_rows.append(df_piece)
+                        except Exception:
+                            # skip malformed remote pieces
+                            continue
+                except Exception:
+                    continue
+
+            # Also try to read existing remote master (if present) to be extra-safe
+            try:
+                md_meta, md_res = dbx_client.files_download('/observations/observations.csv')
+                try:
+                    master_remote = pd.read_csv(StringIO(md_res.content.decode('utf-8')))
+                    remote_rows.append(master_remote)
+                except Exception:
+                    pass
+            except Exception:
+                pass
+        except Exception:
+            # Any Dropbox error should not crash reconciliation — continue with what we have
+            pass
+
+    # Combine available frames
+    pieces = [df for df in ([local_df] + remote_rows) if isinstance(df, pd.DataFrame) and not df.empty]
+    if pieces:
+        try:
+            combined = pd.concat(pieces, ignore_index=True, sort=False)
+        except Exception:
+            # Fallback: use local only
+            combined = local_df.copy() if isinstance(local_df, pd.DataFrame) else pd.DataFrame()
+    else:
+        combined = local_df.copy() if isinstance(local_df, pd.DataFrame) else pd.DataFrame()
+
+    # Normalize columns and dedupe by obs_id, preferring latest submission_time
+    if not combined.empty and 'obs_id' in combined.columns:
+        # parse submission_time where possible
+        if 'submission_time' in combined.columns:
+            try:
+                combined['__st'] = pd.to_datetime(combined['submission_time'], errors='coerce')
+            except Exception:
+                combined['__st'] = pd.NaT
+            # sort ascending so drop_duplicates(keep='last') keeps the most recent
+            try:
+                combined = combined.sort_values('__st', na_position='first')
+            except Exception:
+                pass
+        try:
+            combined = combined.drop_duplicates(subset=['obs_id'], keep='last').reset_index(drop=True)
+        except Exception:
+            combined = combined.drop_duplicates(subset=['obs_id']).reset_index(drop=True)
+        # clean up temporary column
+        if '__st' in combined.columns:
+            try:
+                combined = combined.drop(columns=['__st'])
+            except Exception:
+                pass
+
+    # Ensure we have a local file written as authoritative
+    try:
+        combined.to_csv(local_path, index=False, quoting=csv.QUOTE_MINIMAL)
+    except Exception:
+        try:
+            if isinstance(local_df, pd.DataFrame) and not local_df.empty:
+                local_df.to_csv(local_path, index=False, quoting=csv.QUOTE_MINIMAL)
+        except Exception:
+            pass
+
+    # Upload the authoritative master to Dropbox
+    if dbx_client is not None and not combined.empty:
+        try:
+            csv_bytes = combined.to_csv(index=False, quoting=csv.QUOTE_MINIMAL).encode('utf-8')
+            dbx_client.files_upload(csv_bytes, '/observations/observations.csv', mode=dropbox.files.WriteMode.overwrite)
+        except Exception:
+            # If upload fails, do not raise — UI should already have saved local file
+            pass
+
+    return combined
 # If Dropbox is configured in this environment, prefer the master CSV stored in Dropbox
 if dbx is not None:
     try:
@@ -457,18 +576,32 @@ if hotel_code:
             # inside the social/notes column, create two sub-columns for social_behaviour and notes
             sb_col, hole_notes_col = c_sb_notes.columns([2, 2])
 
-            # Prepopulate defaults if possible
+            # Prepopulate defaults if possible (use authoritative df and pick most recent by submission_time)
             defaults = {"scientific_name": "", "num_males": 0, "num_females": 0, "social_behaviour": []}
-            if not df.empty and hotel_code:
-                subset = df[(df["hotel_code"] == hotel_code) & (df["nest_hole"] == hole_label)]
-                if not subset.empty:
-                    last_entry = subset.iloc[-1]
-                    defaults = {
-                        "scientific_name": last_entry.get("scientific_name", ""),
-                        "num_males": int(last_entry.get("num_males", 0)),
-                        "num_females": int(last_entry.get("num_females", 0)),
-                        "social_behaviour": last_entry.get("social_behaviour", "").split(", ") if last_entry.get("social_behaviour") else []
-                    }
+            try:
+                if hotel_code:
+                    # Ensure we're reading up-to-date df (reconciled earlier on submit)
+                    if not df.empty:
+                        subset = df[(df["hotel_code"] == hotel_code) & (df["nest_hole"] == hole_label)].copy()
+                        if not subset.empty:
+                            # prefer rows with valid submission_time parsed as datetimes
+                            if 'submission_time' in subset.columns:
+                                try:
+                                    subset['__st'] = pd.to_datetime(subset['submission_time'], errors='coerce')
+                                    subset = subset.sort_values('__st', na_position='first')
+                                except Exception:
+                                    pass
+                            # take the last row (most recent) after sorting
+                            last_entry = subset.iloc[-1]
+                            defaults = {
+                                "scientific_name": last_entry.get("scientific_name", ""),
+                                "num_males": int(last_entry.get("num_males", 0) or 0),
+                                "num_females": int(last_entry.get("num_females", 0) or 0),
+                                "social_behaviour": last_entry.get("social_behaviour", "").split(", ") if last_entry.get("social_behaviour") else []
+                            }
+            except Exception:
+                # keep defaults as empty if anything fails
+                pass
 
             with c0:
                 st.markdown(f"**{hole_label}**")
@@ -636,16 +769,20 @@ if submitted:
                         combined.to_csv(DATA_FILE, index=False, quoting=csv.QUOTE_MINIMAL)
                 else:
                     all_df.to_csv(DATA_FILE, index=False, quoting=csv.QUOTE_MINIMAL)
-                # Also upload the combined master CSV to Dropbox under /observations/observations.csv
+                # Reconcile local and remote pieces and upload authoritative master
                 try:
-                    try:
-                        master_df = existing_df if (os.path.exists(DATA_FILE) and not existing_df.empty) else all_df
-                    except Exception:
-                        master_df = all_df
-                    csv_bytes = master_df.to_csv(index=False, quoting=csv.QUOTE_MINIMAL).encode('utf-8')
-                    dbx.files_upload(csv_bytes, '/observations/observations.csv', mode=dropbox.files.WriteMode.overwrite)
+                    authoritative = reconcile_and_upload_master(dbx, local_path=DATA_FILE)
+                    if isinstance(authoritative, pd.DataFrame) and not authoritative.empty:
+                        df = authoritative.copy()
+                    else:
+                        # fallback to what we have locally
+                        try:
+                            df = safe_read_csv(DATA_FILE)
+                        except Exception:
+                            df = df
                 except Exception as e:
-                    st.warning(f"Failed to upload master observations.csv to Dropbox: {e}")
+                    st.warning(f"Reconciliation/upload step failed: {e}")
+
                 st.success(f"✅ Recorded {len(rows_to_save)} observation(s) for hotel {hotel_code}")
                 st.json(all_df.to_dict(orient="records")[0] if len(all_df) == 1 else all_df.to_dict(orient="records"))
             except Exception as e:
