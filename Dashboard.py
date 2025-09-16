@@ -24,18 +24,38 @@ def safe_read_csv(path):
 
 
 def init_dropbox():
-    # Load Dropbox credentials from local secrets.json (same pattern as portal)
+    # Load Dropbox credentials: prefer Streamlit secrets, then environment, then local secrets.json
     try:
-        with open("secrets.json") as f:
-            secrets = json.load(f)
-        dbx = dropbox.Dropbox(
-            app_key=secrets.get("DROPBOX_APP_KEY"),
-            app_secret=secrets.get("DROPBOX_APP_SECRET"),
-            oauth2_refresh_token=secrets.get("DROPBOX_REFRESH_TOKEN"),
-        )
-        return dbx
+        # Try Streamlit secrets first
+        try:
+            app_key = st.secrets.get("DROPBOX_APP_KEY")
+            app_secret = st.secrets.get("DROPBOX_APP_SECRET")
+            refresh = st.secrets.get("DROPBOX_REFRESH_TOKEN")
+        except Exception:
+            app_key = app_secret = refresh = None
+
+        # Next, environment variables
+        if not (app_key and app_secret and refresh):
+            app_key = app_key or os.environ.get("DROPBOX_APP_KEY")
+            app_secret = app_secret or os.environ.get("DROPBOX_APP_SECRET")
+            refresh = refresh or os.environ.get("DROPBOX_REFRESH_TOKEN")
+
+        # Fallback to local secrets.json
+        if not (app_key and app_secret and refresh) and os.path.exists("secrets.json"):
+            try:
+                with open("secrets.json") as f:
+                    s = json.load(f)
+                app_key = app_key or s.get("DROPBOX_APP_KEY")
+                app_secret = app_secret or s.get("DROPBOX_APP_SECRET")
+                refresh = refresh or s.get("DROPBOX_REFRESH_TOKEN")
+            except Exception:
+                pass
+
+        if app_key and app_secret and refresh:
+            return dropbox.Dropbox(app_key=app_key, app_secret=app_secret, oauth2_refresh_token=refresh)
     except Exception:
-        return None
+        pass
+    return None
 
 
 def load_observations_from_dropbox(dbx):
@@ -148,6 +168,85 @@ def ensure_photo_links(dbx, df):
         pass
     return df
 
+
+def load_authoritative_observations(dbx_client):
+    """Return authoritative observations DataFrame:
+    - If a remote master exists (preferred), download and return it.
+    - Otherwise, attempt to list and concatenate CSVs under `/observations/csv/`.
+    - Falls back to local `observations.csv` if Dropbox not available.
+    """
+    # If no Dropbox, fall back to local file
+    if dbx_client is None:
+        return safe_read_csv('observations.csv')
+
+    # Try master locations first (single file download is cheap)
+    candidate_paths = ['/observations/observations.csv', '/observations.csv', '/observations/observations_master.csv']
+    for p in candidate_paths:
+        try:
+            md = dbx_client.files_get_metadata(p)
+            _, res = dbx_client.files_download(p)
+            content = res.content.decode('utf-8')
+            from io import StringIO
+            df = pd.read_csv(StringIO(content))
+            if not df.empty:
+                return df
+        except Exception:
+            continue
+
+    # If no master found, try to reconstruct by concatenating per-observation CSVs
+    pieces = []
+    try:
+        try:
+            res = dbx_client.files_list_folder('/observations/csv')
+            entries = res.entries
+            while getattr(res, 'has_more', False):
+                res = dbx_client.files_list_folder_continue(res.cursor)
+                entries.extend(res.entries)
+        except Exception:
+            entries = []
+
+        for e in entries:
+            try:
+                name = getattr(e, 'name', '')
+                if name.lower().endswith('.csv'):
+                    _, r = dbx_client.files_download(f"/observations/csv/{name}")
+                    txt = r.content.decode('utf-8')
+                    try:
+                        pieces.append(pd.read_csv(StringIO(txt)))
+                    except Exception:
+                        continue
+            except Exception:
+                continue
+    except Exception:
+        pass
+
+    if pieces:
+        try:
+            combined = pd.concat(pieces, ignore_index=True, sort=False)
+            # dedupe by obs_id preferring latest by submission_time
+            if 'obs_id' in combined.columns:
+                if 'submission_time' in combined.columns:
+                    try:
+                        combined['__st'] = pd.to_datetime(combined['submission_time'], errors='coerce')
+                        combined = combined.sort_values('__st', na_position='first')
+                    except Exception:
+                        pass
+                try:
+                    combined = combined.drop_duplicates(subset=['obs_id'], keep='last').reset_index(drop=True)
+                except Exception:
+                    combined = combined.drop_duplicates(subset=['obs_id']).reset_index(drop=True)
+                if '__st' in combined.columns:
+                    try:
+                        combined = combined.drop(columns=['__st'])
+                    except Exception:
+                        pass
+            return combined
+        except Exception:
+            pass
+
+    # Fallback to local file
+    return safe_read_csv('observations.csv')
+
 # ---- App Config ----
 st.set_page_config(
     page_title="Bee Box",
@@ -174,12 +273,7 @@ try:
     # obs_df is loaded later; if not present here, attempt to load from Dropbox/local
     if 'obs_df' not in locals():
         dbx = init_dropbox()
-        if dbx:
-            obs_df = load_observations_from_dropbox(dbx)
-            if obs_df.empty:
-                obs_df = safe_read_csv('observations.csv')
-        else:
-            obs_df = safe_read_csv('observations.csv')
+        obs_df = load_authoritative_observations(dbx)
 
     if not obs_df.empty and 'scientific_name' in obs_df.columns:
         sp = obs_df['scientific_name'].fillna('Unknown')
@@ -363,12 +457,8 @@ st.markdown(leaderboard_html, unsafe_allow_html=True)
 # --- Recent Images Gallery ---
 st.subheader("📸 Recent Images")
 # Try Dropbox first, fall back to local file
-if dbx:
-    obs_df = load_observations_from_dropbox(dbx)
-    if obs_df.empty:
-        obs_df = safe_read_csv("observations.csv")
-else:
-    obs_df = safe_read_csv("observations.csv")
+dbx = init_dropbox()
+obs_df = load_authoritative_observations(dbx)
 if obs_df.empty or "photo_link" not in obs_df.columns:
     st.info("No images found yet.")
 else:
