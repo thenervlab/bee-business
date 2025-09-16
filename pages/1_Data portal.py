@@ -7,6 +7,8 @@ import uuid
 import dropbox
 import json
 import os
+import requests
+from io import StringIO
 
 # --- Load secrets: prefer Streamlit secrets, then environment, then local secrets.json ---
 def load_secrets():
@@ -84,9 +86,49 @@ DEFAULT_HOTEL_HOLES = {
 OBSERVER_HOTELS = DEFAULT_OBSERVER_HOTELS.copy()
 HOTEL_HOLES = DEFAULT_HOTEL_HOLES.copy()
 oh_path = os.path.join("data", "observer_hotel_holes.csv")
-if os.path.exists(oh_path):
+
+# Try remote URL first (st.secrets or env), then local file, then defaults
+@st.cache_data(show_spinner=False)
+def fetch_csv_from_url(url: str, token: str = None):
+    if not url:
+        return None
+    try:
+        headers = {}
+        if token:
+            headers["Authorization"] = f"token {token}"
+        resp = requests.get(url, headers=headers, timeout=15)
+        resp.raise_for_status()
+        return pd.read_csv(StringIO(resp.text))
+    except Exception:
+        return None
+
+# Look for a configured remote URL in st.secrets or environment
+oh_url = None
+try:
+    oh_url = st.secrets.get("OBSERVER_HOTEL_CSV_URL") or st.secrets.get("OBSERVER_HOTELS_URL")
+except Exception:
+    oh_url = None
+if not oh_url:
+    oh_url = os.environ.get("OBSERVER_HOTEL_CSV_URL") or os.environ.get("OBSERVER_HOTELS_URL")
+
+# Optional GitHub token for private raw URLs
+GITHUB_TOKEN = None
+try:
+    GITHUB_TOKEN = st.secrets.get("GITHUB_TOKEN")
+except Exception:
+    GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
+
+oh_df = None
+if oh_url:
+    oh_df = fetch_csv_from_url(oh_url, token=GITHUB_TOKEN)
+if oh_df is None and os.path.exists(oh_path):
     try:
         oh_df = pd.read_csv(oh_path)
+    except Exception as e:
+        st.warning(f"Failed to read {oh_path}: {e}. Using defaults.")
+
+if oh_df is not None:
+    try:
         # Normalize column names to lowercase for detection
         col_map = {c.lower(): c for c in oh_df.columns}
         # find best matches for observer, hotel, hole
@@ -95,7 +137,7 @@ if os.path.exists(oh_path):
         hole_col = next((col_map[k] for k in col_map if "hole" in k or "nest" in k), None)
 
         if not (obs_col and hotel_col and hole_col):
-            st.warning(f"{oh_path} is missing required columns (observer, hotel, hole). Using defaults.")
+            st.warning("Observer/hotel CSV is missing required columns (observer, hotel, hole). Using defaults.")
         else:
             OBSERVER_HOTELS = {}
             HOTEL_HOLES = {}
@@ -123,7 +165,7 @@ if os.path.exists(oh_path):
                 except Exception:
                     pass
     except Exception as e:
-        st.warning(f"Failed to load {oh_path}: {e}. Using defaults.")
+        st.warning(f"Failed to process observer/hotel CSV: {e}. Using defaults.")
 
 DATA_FILE = "observations.csv"
 
@@ -150,16 +192,54 @@ def safe_read_csv(path):
 
 df = safe_read_csv(DATA_FILE)
 
+# If Dropbox is configured in this environment, prefer the master CSV stored in Dropbox
+if dbx is not None:
+    try:
+        # Attempt to download the master observations.csv from Dropbox
+        md_path = "/observations/observations.csv"
+        try:
+            md_meta, md_res = dbx.files_download(md_path)
+            content = md_res.content.decode("utf-8")
+            try:
+                remote_df = pd.read_csv(StringIO(content))
+                if not remote_df.empty:
+                    df = remote_df
+            except Exception as e:
+                st.warning(f"Failed to parse remote master CSV from Dropbox: {e}")
+        except Exception:
+            # No remote master CSV found or download failed; keep local df
+            pass
+    except Exception:
+        # Any error with Dropbox should not break the app — keep local df
+        pass
+
 # Build species list from data/species_names.csv if present, otherwise fall back to historical data
 species_file = os.path.join("data", "species_names.csv")
 species_list = []
-if os.path.exists(species_file):
+# Try remote URL first (st.secrets or env), then local file, then fallback to historical data
+species_url = None
+try:
+    species_url = st.secrets.get("SPECIES_CSV_URL") or st.secrets.get("SPECIES_LIST_URL")
+except Exception:
+    species_url = None
+if not species_url:
+    species_url = os.environ.get("SPECIES_CSV_URL") or os.environ.get("SPECIES_LIST_URL")
+
+sp_df = None
+if species_url:
+    sp_df = fetch_csv_from_url(species_url, token=GITHUB_TOKEN)
+if sp_df is None and os.path.exists(species_file):
     try:
         sp_df = pd.read_csv(species_file)
+    except Exception as e:
+        st.warning(f"Failed to read {species_file}: {e}")
+
+if sp_df is not None:
+    try:
         if "scientific_name" in sp_df.columns:
             species_list = sorted(sp_df["scientific_name"].dropna().astype(str).str.strip().unique().tolist())
     except Exception as e:
-        st.warning(f"Failed to read {species_file}: {e}")
+        st.warning(f"Failed to parse species CSV: {e}")
 
 if not species_list and not df.empty and "scientific_name" in df.columns:
     try:
