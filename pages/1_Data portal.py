@@ -207,26 +207,98 @@ if hotel_code:
         #     st.text_input("Recorded by", value=observer, disabled=True, key="observer_in_form")
         # with col2:
         #     st.text_input("Hotel code", value=hotel_code, disabled=True, key="hotel_in_form")
-        # Stack date and time vertically in left column, image in right column with ratio 1:2
-        dcol_left, dcol_right = st.columns([1, 2])
-        with dcol_left:
+        # Arrange observation details into three equal columns:
+        # (1) Obs date/time + image uploader, (2) Overall Notes, (3) Logo/image display
+        col_left, col_mid, col_right = st.columns([1, 1, 1])
+        with col_left:
             obs_date = st.date_input("Obs. date*", value=date.today(), key="obs_date")
             obs_time = st.time_input("Obs. time*", value=datetime.now().time(), key="obs_time")
-        with dcol_right:
+            # Image uploader now sits under date/time in the left column
             photo = st.file_uploader("Image", type=["jpg", "jpeg", "png"], key="photo")
+        with col_mid:
+            # Submission-level notes (standalone, before nest holes)
+            notes_submission = st.text_area("Overall notes", value="", key="notes_submission")
+        with col_right:
+            # Show a small logo or hotel image. Try multiple candidate paths
+            # Render images at a fixed display width to avoid overly tall renders
+            IMAGE_DISPLAY_WIDTH = 220
+            try:
+                candidates = [
+                    os.path.join('data', 'logo.png'),
+                    os.path.join('data', 'logo.jpg'),
+                    os.path.join('data', 'logo.jpeg'),
+                    os.path.join('assets', 'logo.png'),
+                    os.path.join('assets', 'logo.jpg'),
+                    os.path.join('assets', 'logo.jpeg'),
+                    os.path.join('assets', 'logo.svg'),
+                ]
+                found = next((p for p in candidates if os.path.exists(p)), None)
+                # Prefer hotel-specific images first (data/{hotel_code}.jpg/png/jpeg)
+                hotel_candidates = [
+                    os.path.join('assets', f"{hotel_code}.png"),
+                    os.path.join('assets', f"{hotel_code}.jpg"),
+                    os.path.join('assets', f"{hotel_code}.jpeg"),
+                ]
+                hotel_found = next((p for p in hotel_candidates if os.path.exists(p)), None)
+                if hotel_found:
+                    found = hotel_found
+
+                if found:
+                    # Render SVG inline if present, otherwise use st.image with fixed width
+                    if found.lower().endswith('.svg'):
+                        try:
+                            with open(found, 'r', encoding='utf-8') as f:
+                                svg = f.read()
+                            # Constrain SVG display size with a wrapping div
+                            st.markdown(f"<div style='max-width:{IMAGE_DISPLAY_WIDTH}px'>{svg}</div>", unsafe_allow_html=True)
+                        except Exception:
+                            st.image(found, caption=os.path.basename(found), width=IMAGE_DISPLAY_WIDTH)
+                    else:
+                        # Caption 'Logo' for generic logo, otherwise show filename/hotel
+                        caption = 'Logo' if 'logo' in os.path.basename(found).lower() else f'Hotel {hotel_code}'
+                        st.image(found, caption=caption, width=IMAGE_DISPLAY_WIDTH)
+                else:
+                    st.info("No logo found in data/ or assets/ (checked data/logo.png, assets/logo.png, and hotel images).")
+            except Exception:
+                pass
 
         # --- Section 3: grid for nest holes (rows A-K or from HOTEL_HOLES) ---
         st.header("Nest holes")
         hole_values = {}
 
-        # Column headers for grid (ratios: hole, sci, males, females, social_behaviour, notes)
-        rcols = st.columns([1, 4, 2, 2, 4, 4])
-        rcols[0].markdown("**Hole**")
-        rcols[1].markdown("**Scientific name**")
-        rcols[2].markdown("**# Males**")
-        rcols[3].markdown("**# Females**")
-        rcols[4].markdown("**Social behaviours**")
-        rcols[5].markdown("**Notes**")
+    # Column headers for grid (ratios: hole, sci, counts-group, social_behaviour, notes)
+    # counts-group will be subdivided into #cells | male | female | unknown with relative ratios
+
+        # --- Consolidated one-time header row for the Nest Holes table ---
+        # Render a single header row with one label per data column:
+        # Hole | Scientific name | Cells | ♂️ | ♀️ | ❔ | Social behaviours | Notes
+        hdr_c0, hdr_c1, hdr_c_counts, hdr_c_sb_notes = st.columns([1, 4, 4, 4])
+        # First two columns: Hole and Scientific name
+        try:
+            hdr_c0.markdown("<div style='font-weight:700;'>Hole</div>", unsafe_allow_html=True)
+            hdr_c1.markdown("<div style='font-weight:700;'>Scientific name</div>", unsafe_allow_html=True)
+        except Exception:
+            hdr_c0.markdown("**Hole**")
+            hdr_c1.markdown("**Scientific name**")
+        # inside the counts header, create 4 small header columns for Cells, male, female, unknown
+        h_cells, h_male, h_female, h_unknown = hdr_c_counts.columns([1, 1, 1, 1])
+        try:
+            h_cells.markdown("<div style='text-align:center;font-weight:600;' title='Number of occupied nest cells in this hole'>Cells</div>", unsafe_allow_html=True)
+            h_male.markdown("<div style='text-align:center;' title='Number of male individuals observed'>♂️</div>", unsafe_allow_html=True)
+            h_female.markdown("<div style='text-align:center;' title='Number of female individuals observed'>♀️</div>", unsafe_allow_html=True)
+            h_unknown.markdown("<div style='text-align:center;' title='Number of individuals of unknown sex'>❔</div>", unsafe_allow_html=True)
+        except Exception:
+            h_cells.markdown("**Cells**")
+            h_male.markdown("**♂️**")
+            h_female.markdown("**♀️**")
+            h_unknown.markdown("**❔**")
+        # split the rightmost header column into Social behaviours and Notes labels
+        try:
+            hdr_sb, hdr_notes = hdr_c_sb_notes.columns([2, 2])
+            hdr_sb.markdown("<div style='font-weight:600;' title='Behaviour observed at this hole (Solitary, Social, Parasitic)'>Socialilty</div>", unsafe_allow_html=True)
+            hdr_notes.markdown("<div style='font-weight:600;'>Notes</div>", unsafe_allow_html=True)
+        except Exception:
+            hdr_c_sb_notes.markdown("**Social behaviours / Notes**")
 
         # Determine holes for selected hotel (fallback to A-K)
         holes_for_hotel = HOTEL_HOLES.get(hotel_code) if hotel_code else None
@@ -234,7 +306,13 @@ if hotel_code:
             holes_for_hotel = [chr(i) for i in range(ord('A'), ord('K')+1)]
 
         for hole_label in holes_for_hotel:
-            c0, c1, c2, c3, c4, c5 = st.columns([1, 4, 2, 2, 4, 4])
+            # split counts into four small columns: cells, males, females, unknowns
+            c0, c1, c_counts, c_sb_notes = st.columns([1, 4, 4, 4])
+            # inside the counts column, create sub-columns
+            cnt_cells_col, cnt_m_col, cnt_f_col, cnt_u_col = c_counts.columns([1, 1, 1, 1])
+            # (Per-row headers removed - consolidated header is rendered once above the grid)
+            # inside the social/notes column, create two sub-columns for social_behaviour and notes
+            sb_col, hole_notes_col = c_sb_notes.columns([2, 2])
 
             # Prepopulate defaults if possible
             defaults = {"scientific_name": "", "num_males": 0, "num_females": 0, "social_behaviour": []}
@@ -262,19 +340,25 @@ if hotel_code:
                 except Exception:
                     default_index = 0
                 sci = st.selectbox(label, local_species, index=default_index, key=f"sci_{hole_label}", label_visibility='collapsed')
-            with c2:
+            with cnt_cells_col:
+                ncells = st.number_input(f"cells for {hole_label}", min_value=0, step=1, value=int(defaults.get("num_cells", 0) or 0), key=f"cells_{hole_label}", label_visibility='collapsed')
+            with cnt_m_col:
                 nm = st.number_input(f"males for {hole_label}", min_value=0, step=1, value=defaults["num_males"], key=f"males_{hole_label}", label_visibility='collapsed')
-            with c3:
+            with cnt_f_col:
                 nf = st.number_input(f"females for {hole_label}", min_value=0, step=1, value=defaults["num_females"], key=f"fem_{hole_label}", label_visibility='collapsed')
-            with c4:
+            with cnt_u_col:
+                nu = st.number_input(f"unknowns for {hole_label}", min_value=0, step=1, value=int(defaults.get("num_unknowns", 0) or 0), key=f"unk_{hole_label}", label_visibility='collapsed')
+            with sb_col:
                 sb = st.multiselect(f"social_behaviour for {hole_label}", ["Solitary", "Social", "Parasitic"], default=defaults["social_behaviour"], key=f"sb_{hole_label}", label_visibility='collapsed')
-            with c5:
+            with hole_notes_col:
                 notes = st.text_input(f"notes for {hole_label}", key=f"notes_{hole_label}", label_visibility='collapsed')
 
             hole_values[hole_label] = {
                 "scientific_name": sci,
+                "num_cells": ncells,
                 "num_males": nm,
                 "num_females": nf,
+                "num_unknowns": nu,
                 "social_behaviour": sb,
                 "notes": notes
             }
@@ -307,13 +391,15 @@ if submitted:
         # Read fresh values from st.session_state to avoid using potentially stale captured dict
         for hole_label in list(hole_values.keys()):
             sci = str(st.session_state.get(f"sci_{hole_label}", "")).strip()
+            nc = st.session_state.get(f"cells_{hole_label}", 0)
             nm = st.session_state.get(f"males_{hole_label}", 0)
             nf = st.session_state.get(f"fem_{hole_label}", 0)
+            nu = st.session_state.get(f"unk_{hole_label}", 0)
             sb = st.session_state.get(f"sb_{hole_label}", []) or []
             notes_text = str(st.session_state.get(f"notes_{hole_label}", "")).strip()
 
             # Consider a hole 'filled' if it has a scientific name, counts, social behaviour, or notes
-            if sci or nm > 0 or nf > 0 or sb or notes_text:
+            if sci or nm > 0 or nf > 0 or sb or notes_text or nc > 0 or nu > 0:
                     # Create a single submission_id for this form submit (used below)
                     # We'll create submission_id outside the loop once; if not present, create it now
                     if "submission_id" not in locals():
@@ -344,10 +430,13 @@ if submitted:
                         "obs_time": str(obs_time),
                         "nest_hole": hole_label,
                         "scientific_name": sci,
+                        "num_cells": nc,
                         "num_males": nm,
                         "num_females": nf,
+                        "num_unknowns": nu,
                         "social_behaviour": ", ".join(sb),
                         "notes": notes_text,
+                        "submission_notes": notes_submission,
                         "photo_link": photo_link,
                         "submission_time": submission_time
                     }
