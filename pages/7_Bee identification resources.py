@@ -6,11 +6,8 @@ We should preface this section with 'bee identification is hard' and that it inv
 
 Thankfully, there is a community of people out there that are willing to help and we are here to help as well. When it comes to identifying bees from photos, it can be possible, although not always. If you want help through photos please be sure to take excellent and clear photos of the face, dorsal (back of the) thorax, and abdomen (this is often easier said than done). We may also then ask you to go back and take more photos of specific features, depending on the bee. 
 
-Alternatively, it is often easier to ifentify bees from specimens and we did send most of you a small handful of vials. 
+Alternatively, it is often easier to ifentify bees from specimens and we did send most of you a small handful of vials. For that, please go and see the 
 
-Hi Beeple, so you've got native bees in your bee hotel (yay) but what species are they?
-
-We will help you ID your native bees — please if you can provide high resolution photos of the face, dorsal thorax, and abdomen (I know, easier said than done!)
 """)
 
 st.image("pageAssets/Hylaeus (Macrohylaeus) alcyoneus Male_JamesDorey_Hylaeus (Macrohylaeus) alcyoneus male 39p 2x MPE-Edit.jpg", 
