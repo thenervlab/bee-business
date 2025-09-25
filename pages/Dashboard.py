@@ -8,6 +8,9 @@ import json
 import dropbox
 
 
+
+
+
 def safe_read_csv(path):
     if not os.path.exists(path):
         return pd.DataFrame()
@@ -255,12 +258,15 @@ st.set_page_config(
 )
 
 # ---- Landing Page ----
-st.title("🐝 Welcome to the Bee Box!")
+st.title("🐝 Welcome to the bee hotel project!")
 st.write("""
-This app helps our citizen scientists record observations, explore the data collected so far, and learn more about the project. 
+This is the landing page for our wonderful contributors and collaborators to enter their data and to seek some helpful documentation for what to do.
 """)
 st.write(""" 
-Keen to get the buzz on bee business? Check out a summary of our observations below! 
+The bee hotel project is a collaboration involving both citizen scientists and professional (or retired) scientists and entomologists looking to better understand what our lovely native bees do at home. We are starting simple and looking at things like sociality, activity periods, parasitism and so forth. We expect that the site will grow slightly as questions get asked and needs arise… certainly we will fill these pages with more information and statistics.
+""")
+st.write(""" 
+Keep in mind that this is very much in development... But, for now, happy observing, Bee Nerds! 
 """)
 
 
