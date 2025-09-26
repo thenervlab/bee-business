@@ -20,13 +20,10 @@ SpecimenPage = st.Page("pages/6_Collecting specimens.py", title="Collecting spec
 contactPage =  st.Page("pages/3_Contact.py", title="Contact us", icon = ":material/mail:")
 
 pg = st.navigation(
-    
     {
             "": [dashPage, portalPage],
             "Resources": [installPage, CheckPage, IDPage, SpecimenPage],
             " ": [contactPage],
         },
-
 )
-
 pg.run()
