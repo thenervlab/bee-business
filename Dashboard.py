@@ -8,6 +8,13 @@ import json
 import dropbox
 
 
+# ---- App Config ----
+st.set_page_config(
+    page_title="Bee Box",
+    page_icon="🐝",
+    layout="wide"
+)
+
 
     # Set up the navigation bar
         # icons at https://fonts.google.com/icons?icon.set=Material+Symbols&icon.style=Rounded&icon.size=24&icon.color=%23e3e3e3
