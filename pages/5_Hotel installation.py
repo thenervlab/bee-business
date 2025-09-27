@@ -39,7 +39,7 @@ st.markdown("4.	The JBD hotels can’t be mounted on a completely flat surface b
 st.markdown("5.	The JBD hotels can be mounted either vertically (as above) or horizontally (record this for us).")
 st.markdown("6.	Put your hotel somewhere that’s convenient for you. We don’t want the data collection to become a drain on you and so putting the hotel where you’re happy to look frequently and record data is encouraged!")
 st.markdown("7. Consider not putting both of your hotels in the exact same spot. There are three reasons for this. Firstly, we want to spread our chances of bees finding the hotel. Secondly, we want to spread out the parasite pressure. Thirdly, we don't want you to get confused about which hotel you're enterrign data for.")
-st.markdown("7.	Finally, once you’ve decided where you’re going to put it (and you can decide to change, just discuss with us first), you can line the hotel up where you want it and use a pencil to mark where the four screws will go through the two L-brackets. You should consider pre-drilling the holes with a small (2.5–3 mm) drill bit. Once you have done this you can easily use the screws provided (or your own) to screw in all four screws and you’re almost done! ")
+st.markdown("8.	Finally, once you’ve decided where you’re going to put it (and you can decide to change, just discuss with us first), you can line the hotel up where you want it and use a pencil to mark where the four screws will go through the two L-brackets. You should consider pre-drilling the holes with a small (2.5–3 mm) drill bit. Once you have done this you can easily use the screws provided (or your own) to screw in all four screws and you’re almost done! ")
 
 st.subheader("Initial data collection")
 st.write("""
