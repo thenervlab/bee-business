@@ -5,6 +5,7 @@ import os
 from datetime import datetime, timedelta
 import shutil
 import json
+import dropbox
 
 def safe_read_csv(path):
     if not os.path.exists(path):
@@ -252,6 +253,11 @@ st.set_page_config(
     layout="wide"
 )
 
+# ---- Load Data at Startup ----
+# Initialize Dropbox and load authoritative observations once at startup
+dbx = init_dropbox()
+obs_df = load_authoritative_observations(dbx)
+
 # ---- Landing Page ----
 st.title("🐝 Welcome to the bee hotel project!")
 st.write("""
@@ -271,11 +277,6 @@ Keep in mind that this is very much in development... But, for now, happy observ
 
 # Species visualization from observations (dropbox master preferred)
 try:
-    # obs_df is loaded later; if not present here, attempt to load from Dropbox/local
-    if 'obs_df' not in locals():
-        dbx = init_dropbox()
-        obs_df = load_authoritative_observations(dbx)
-
     if not obs_df.empty and 'scientific_name' in obs_df.columns:
         sp = obs_df['scientific_name'].fillna('Unknown')
         sp_counts = sp.value_counts().reset_index()
@@ -293,8 +294,6 @@ except Exception as e:
     st.warning(f'Failed to build species visualization: {e}')
 
 st.markdown("---")
-
-dbx = init_dropbox()
 
 # KPI row to make the dashboard more engaging
 try:
@@ -324,6 +323,9 @@ except Exception:
     pass
 # --- Leaderboard & Species two-column layout ---
 # Build leaderboard for the last 7 days and render alongside the species chart
+
+# Initialize leaderboard_html to avoid undefined variable error
+leaderboard_html = "<p>Leaderboard currently unavailable.</p>"
 
 try:
     if obs_df.empty:
@@ -450,6 +452,7 @@ try:
 except Exception:
     # If leaderboard fails, fall back to showing a placeholder and continue
     st.info('Leaderboard currently unavailable.')
+    leaderboard_html = "<p>Leaderboard currently unavailable.</p>"
 
 # --- Leaderboard (full-width) ---
 st.subheader("🏆 Leaderboard")
@@ -457,9 +460,7 @@ st.markdown(leaderboard_html, unsafe_allow_html=True)
 
 # --- Recent Images Gallery ---
 st.subheader("📸 Recent Images")
-# Try Dropbox first, fall back to local file
-dbx = init_dropbox()
-obs_df = load_authoritative_observations(dbx)
+# Use the data already loaded at startup
 if obs_df.empty or "photo_link" not in obs_df.columns:
     st.info("No images found yet.")
 else:
