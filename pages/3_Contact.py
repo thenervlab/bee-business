@@ -3,7 +3,7 @@ import streamlit as st
 st.title("📩 Contact Us")
 
 st.write("""
-Interested in joining the project or have questions?  
+Interested in joining the project with your own hotels or have questions?  
 We’d love to hear from you!
 """)
 
