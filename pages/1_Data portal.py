@@ -846,7 +846,7 @@ if submitted:
 
                     obs_id = str(uuid.uuid4())
 
-    # Take the first hole to label theempty data with
+                     # Take the first hole to label theempty data with
                     first_hole = list(hole_values.keys())[0]
 
                     obs_data = {
