@@ -883,7 +883,7 @@ if submitted:
         if rows_to_save:
             save_observation(rows_to_save, hotel_code, DATA_FILE, dbx)
         else:
-            #st.info("No hole rows had data to submit. Please fill at least one hole row.")
+            st.info("No hole rows had data to submit. Please fill at least one hole row.")
              # Add a confirmation button
             if st.button("✅ I understand, continue anyway"):
                 st.success("Proceeding without any hole row data...")
