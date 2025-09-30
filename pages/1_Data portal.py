@@ -45,8 +45,9 @@ def load_secrets():
     # Nothing found
     return {}
 
-# Define the upload function
-def uploadToWeb():
+
+# Define the save and upload function
+def save_observation(rows_to_save, hotel_code, DATA_FILE, dbx):
     # Build long-form DataFrame with requested columns and linkage fields
             cols = [
                 "obs_id",
@@ -103,7 +104,6 @@ def uploadToWeb():
                 st.json(all_df.to_dict(orient="records")[0] if len(all_df) == 1 else all_df.to_dict(orient="records"))
             except Exception as e:
                 st.error(f"Failed to write observations to {DATA_FILE}: {e}")
-    
 
 secrets = load_secrets()
 
@@ -879,11 +879,11 @@ if submitted:
 
         # Save all rows locally at once
         if rows_to_save:
-            uploadToWeb()
+            save_observation(rows_to_save, hotel_code, DATA_FILE, dbx)
         else:
             st.info("No hole rows had data to submit. Please fill at least one hole row.")
              # Add a confirmation button
             if st.button("✅ I understand, continue anyway"):
              st.success("Proceeding without any hole row data...")
-             uploadToWeb()
-                
+             save_observation(rows_to_save, hotel_code, DATA_FILE, dbx)
+        
