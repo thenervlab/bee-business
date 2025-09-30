@@ -846,9 +846,6 @@ if submitted:
 
                     obs_id = str(uuid.uuid4())
 
-                     # Take the first hole to label theempty data with
-                    first_hole = list(hole_values.keys())[0]
-
                     obs_data = {
                         "obs_id": obs_id,
                         "submission_id": submission_id,
@@ -856,7 +853,7 @@ if submitted:
                         "hotel_code": hotel_code,
                         "obs_date": str(obs_date),
                         "obs_time": str(obs_time),
-                        "nest_hole": first_hole,
+                        "nest_hole": hole_label,
                         "scientific_name": sci,
                         "num_cells": nc,
                         "num_males": nm,
@@ -912,6 +909,10 @@ if submitted:
 
             obs_id = str(uuid.uuid4())
 
+
+                 # Take the first hole to label theempty data with
+            first_hole = list(hole_values.keys())[0]
+
             obs_data = {
                 "obs_id": obs_id,
                 "submission_id": submission_id,
@@ -919,7 +920,7 @@ if submitted:
                 "hotel_code": hotel_code,
                 "obs_date": str(obs_date),
                 "obs_time": str(obs_time),
-                "nest_hole": hole_label,
+                "nest_hole": first_hole,
                 "scientific_name": sci,
                 "num_cells": nc,
                 "num_males": nm,
@@ -944,5 +945,5 @@ if submitted:
             except Exception as e:
                 st.warning(f"CSV upload failed for hole {hole_label}: {e}")
 
-             save_observation(rows_to_save, hotel_code, DATA_FILE, dbx)
+            save_observation(rows_to_save, hotel_code, DATA_FILE, dbx)
         
