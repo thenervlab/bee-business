@@ -889,7 +889,7 @@ if submitted:
                 st.success("Proceeding without any hole row data...")
                 # IF no data provided... create a single empty cell
                 # Create a single submission_id for this form submit (used below)
-                        # We'll create submission_id outside the loop once; if not present, create it now
+                # We'll create submission_id outside the loop once; if not present, create it now
                 if "submission_id" not in locals():
                     submission_id = str(uuid.uuid4())
 
@@ -910,8 +910,13 @@ if submitted:
                 obs_id = str(uuid.uuid4())
 
 
-                    # Take the first hole to label theempty data with
+                    # Take the first hole to label the empty data with
                 first_hole = list(hole_values.keys())[0]
+                sci = ""
+                # Set empty defaults
+                nc = nm = nf = nu = 0
+                sb = st.session_state.get(f"sb_{hole_label}", []) or []
+                notes_text = str(st.session_state.get(f"notes_{hole_label}", "")).strip()
 
                 obs_data = {
                     "obs_id": obs_id,
