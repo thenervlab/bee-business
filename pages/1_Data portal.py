@@ -556,7 +556,7 @@ if hotel_code:
         col_left, col_mid, col_right = st.columns([1, 1, 1])
         with col_left:
             obs_date = st.date_input("Obs. date*", value=date.today(), key="obs_date")
-            obs_time = st.time_input("Obs. time*", value=datetime.now().time(), key="obs_time")
+            obs_time = st.time_input("Obs. time (24-hour)*", value=datetime.now().time(), key="obs_time")
             # Image uploader now sits under date/time in the left column
             photo = st.file_uploader("Image", type=["jpg", "jpeg", "png"], key="photo")
         with col_mid:
