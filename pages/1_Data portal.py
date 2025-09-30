@@ -45,6 +45,66 @@ def load_secrets():
     # Nothing found
     return {}
 
+# Define the upload function
+def uploadToWeb():
+    # Build long-form DataFrame with requested columns and linkage fields
+            cols = [
+                "obs_id",
+                "observer",
+                "hotel_code",
+                "obs_date",
+                "obs_time",
+                "nest_hole",
+                "scientific_name",
+                "num_males",
+                "num_females",
+                "social_behaviour",
+                "notes",
+                "submission_id",
+                "photo_link",
+                "submission_time"
+            ]
+            all_df = pd.DataFrame(rows_to_save)
+            # Ensure all columns exist in DataFrame
+            for c in cols:
+                if c not in all_df.columns:
+                    all_df[c] = ""
+            all_df = all_df[cols]
+
+            # Preparing to save rows
+
+            # Read existing file (if any) and overwrite with combined data for atomicity
+            try:
+                if os.path.exists(DATA_FILE):
+                    existing_df = safe_read_csv(DATA_FILE)
+                    # If safe_read_csv returned empty (malformed file was backed up), just write new data
+                    if existing_df.empty:
+                        all_df.to_csv(DATA_FILE, index=False, quoting=csv.QUOTE_MINIMAL)
+                    else:
+                        combined = pd.concat([existing_df, all_df], ignore_index=True)
+                        combined.to_csv(DATA_FILE, index=False, quoting=csv.QUOTE_MINIMAL)
+                else:
+                    all_df.to_csv(DATA_FILE, index=False, quoting=csv.QUOTE_MINIMAL)
+                # Reconcile local and remote pieces and upload authoritative master
+                try:
+                    # Use a lighter-weight incremental update on submit to avoid listing/downloading many files
+                    authoritative = incremental_master_update(dbx, all_df, local_path=DATA_FILE)
+                    if isinstance(authoritative, pd.DataFrame) and not authoritative.empty:
+                        df = authoritative.copy()
+                    else:
+                        try:
+                            df = safe_read_csv(DATA_FILE)
+                        except Exception:
+                            df = df
+                except Exception as e:
+                    st.warning(f"Incremental upload failed: {e}")
+
+                st.success(f"✅ Recorded {len(rows_to_save)} observation(s) for hotel {hotel_code}")
+                st.json(all_df.to_dict(orient="records")[0] if len(all_df) == 1 else all_df.to_dict(orient="records"))
+            except Exception as e:
+                st.error(f"Failed to write observations to {DATA_FILE}: {e}")
+    
+
 secrets = load_secrets()
 
 APP_KEY = secrets.get("DROPBOX_APP_KEY")
@@ -819,121 +879,11 @@ if submitted:
 
         # Save all rows locally at once
         if rows_to_save:
-            # Build long-form DataFrame with requested columns and linkage fields
-            cols = [
-                "obs_id",
-                "observer",
-                "hotel_code",
-                "obs_date",
-                "obs_time",
-                "nest_hole",
-                "scientific_name",
-                "num_males",
-                "num_females",
-                "social_behaviour",
-                "notes",
-                "submission_id",
-                "photo_link",
-                "submission_time"
-            ]
-            all_df = pd.DataFrame(rows_to_save)
-            # Ensure all columns exist in DataFrame
-            for c in cols:
-                if c not in all_df.columns:
-                    all_df[c] = ""
-            all_df = all_df[cols]
-
-            # Preparing to save rows
-
-            # Read existing file (if any) and overwrite with combined data for atomicity
-            try:
-                if os.path.exists(DATA_FILE):
-                    existing_df = safe_read_csv(DATA_FILE)
-                    # If safe_read_csv returned empty (malformed file was backed up), just write new data
-                    if existing_df.empty:
-                        all_df.to_csv(DATA_FILE, index=False, quoting=csv.QUOTE_MINIMAL)
-                    else:
-                        combined = pd.concat([existing_df, all_df], ignore_index=True)
-                        combined.to_csv(DATA_FILE, index=False, quoting=csv.QUOTE_MINIMAL)
-                else:
-                    all_df.to_csv(DATA_FILE, index=False, quoting=csv.QUOTE_MINIMAL)
-                # Reconcile local and remote pieces and upload authoritative master
-                try:
-                    # Use a lighter-weight incremental update on submit to avoid listing/downloading many files
-                    authoritative = incremental_master_update(dbx, all_df, local_path=DATA_FILE)
-                    if isinstance(authoritative, pd.DataFrame) and not authoritative.empty:
-                        df = authoritative.copy()
-                    else:
-                        try:
-                            df = safe_read_csv(DATA_FILE)
-                        except Exception:
-                            df = df
-                except Exception as e:
-                    st.warning(f"Incremental upload failed: {e}")
-
-                st.success(f"✅ Recorded {len(rows_to_save)} observation(s) for hotel {hotel_code}")
-                st.json(all_df.to_dict(orient="records")[0] if len(all_df) == 1 else all_df.to_dict(orient="records"))
-            except Exception as e:
-                st.error(f"Failed to write observations to {DATA_FILE}: {e}")
+            uploadToWeb()
         else:
             st.info("No hole rows had data to submit. Please fill at least one hole row.")
-            
              # Add a confirmation button
             if st.button("✅ I understand, continue anyway"):
              st.success("Proceeding without any hole row data...")
-                    # Build long-form DataFrame with requested columns and linkage fields
-            cols = [
-                "obs_id",
-                "observer",
-                "hotel_code",
-                "obs_date",
-                "obs_time",
-                "nest_hole",
-                "scientific_name",
-                "num_males",
-                "num_females",
-                "social_behaviour",
-                "notes",
-                "submission_id",
-                "photo_link",
-                "submission_time"
-            ]
-            all_df = pd.DataFrame(rows_to_save)
-            # Ensure all columns exist in DataFrame
-            for c in cols:
-                if c not in all_df.columns:
-                    all_df[c] = ""
-            all_df = all_df[cols]
-
-            # Preparing to save rows
-
-            # Read existing file (if any) and overwrite with combined data for atomicity
-            try:
-                if os.path.exists(DATA_FILE):
-                    existing_df = safe_read_csv(DATA_FILE)
-                    # If safe_read_csv returned empty (malformed file was backed up), just write new data
-                    if existing_df.empty:
-                        all_df.to_csv(DATA_FILE, index=False, quoting=csv.QUOTE_MINIMAL)
-                    else:
-                        combined = pd.concat([existing_df, all_df], ignore_index=True)
-                        combined.to_csv(DATA_FILE, index=False, quoting=csv.QUOTE_MINIMAL)
-                else:
-                    all_df.to_csv(DATA_FILE, index=False, quoting=csv.QUOTE_MINIMAL)
-                # Reconcile local and remote pieces and upload authoritative master
-                try:
-                    # Use a lighter-weight incremental update on submit to avoid listing/downloading many files
-                    authoritative = incremental_master_update(dbx, all_df, local_path=DATA_FILE)
-                    if isinstance(authoritative, pd.DataFrame) and not authoritative.empty:
-                        df = authoritative.copy()
-                    else:
-                        try:
-                            df = safe_read_csv(DATA_FILE)
-                        except Exception:
-                            df = df
-                except Exception as e:
-                    st.warning(f"Incremental upload failed: {e}")
-
-                st.success(f"✅ Recorded {len(rows_to_save)} observation(s) for hotel {hotel_code}")
-                st.json(all_df.to_dict(orient="records")[0] if len(all_df) == 1 else all_df.to_dict(orient="records"))
-            except Exception as e:
-                st.error(f"Failed to write observations to {DATA_FILE}: {e}")        
+             uploadToWeb()
+                
