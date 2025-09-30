@@ -105,6 +105,7 @@ def save_observation(rows_to_save, hotel_code, DATA_FILE, dbx):
             except Exception as e:
                 st.error(f"Failed to write observations to {DATA_FILE}: {e}")
 
+
 secrets = load_secrets()
 
 APP_KEY = secrets.get("DROPBOX_APP_KEY")
@@ -845,6 +846,9 @@ if submitted:
 
                     obs_id = str(uuid.uuid4())
 
+    # Take the first hole to label theempty data with
+                    first_hole = list(hole_values.keys())[0]
+
                     obs_data = {
                         "obs_id": obs_id,
                         "submission_id": submission_id,
@@ -852,7 +856,7 @@ if submitted:
                         "hotel_code": hotel_code,
                         "obs_date": str(obs_date),
                         "obs_time": str(obs_time),
-                        "nest_hole": hole_label,
+                        "nest_hole": first_hole,
                         "scientific_name": sci,
                         "num_cells": nc,
                         "num_males": nm,
@@ -877,6 +881,7 @@ if submitted:
                     except Exception as e:
                         st.warning(f"CSV upload failed for hole {hole_label}: {e}")
 
+
         # Save all rows locally at once
         if rows_to_save:
             save_observation(rows_to_save, hotel_code, DATA_FILE, dbx)
@@ -885,5 +890,59 @@ if submitted:
              # Add a confirmation button
             if st.button("✅ I understand, continue anyway"):
              st.success("Proceeding without any hole row data...")
+            # IF no data provided... create a single empty cell
+            # Create a single submission_id for this form submit (used below)
+                    # We'll create submission_id outside the loop once; if not present, create it now
+            if "submission_id" not in locals():
+                submission_id = str(uuid.uuid4())
+
+                # Upload photo once and reuse photo_link
+                if photo_bytes:
+                    try:
+                        photo_filename = f"{submission_id}_{photo.name}"
+                        dropbox_path = f"/observations/photos/{photo_filename}"
+                        dbx.files_upload(photo_bytes, dropbox_path, mode=dropbox.files.WriteMode.overwrite)
+                        shared_link = dbx.sharing_create_shared_link_with_settings(dropbox_path)
+                        photo_link = shared_link.url.replace("?dl=0", "?raw=1")
+                    except Exception as e:
+                        st.warning(f"Photo upload failed: {e}")
+                        photo_link = None
+                else:
+                    photo_link = None
+
+            obs_id = str(uuid.uuid4())
+
+            obs_data = {
+                "obs_id": obs_id,
+                "submission_id": submission_id,
+                "observer": observer,
+                "hotel_code": hotel_code,
+                "obs_date": str(obs_date),
+                "obs_time": str(obs_time),
+                "nest_hole": hole_label,
+                "scientific_name": sci,
+                "num_cells": nc,
+                "num_males": nm,
+                "num_females": nf,
+                "num_unknowns": nu,
+                "social_behaviour": ", ".join(sb),
+                "notes": notes_text,
+                "submission_notes": notes_submission,
+                "photo_link": photo_link,
+                "submission_time": submission_time
+            }
+
+            rows_to_save.append(obs_data)
+
+            # Upload per-observation CSV (optional)
+            try:
+                new_df = pd.DataFrame([obs_data])
+                obs_csv_filename = f"{obs_id}.csv"
+                csv_buffer = new_df.to_csv(index=False, quoting=csv.QUOTE_MINIMAL).encode("utf-8")
+                dbx.files_upload(csv_buffer, f"/observations/csv/{obs_csv_filename}", mode=dropbox.files.WriteMode.overwrite)
+                uploaded_csvs.append(obs_csv_filename)
+            except Exception as e:
+                st.warning(f"CSV upload failed for hole {hole_label}: {e}")
+
              save_observation(rows_to_save, hotel_code, DATA_FILE, dbx)
         
