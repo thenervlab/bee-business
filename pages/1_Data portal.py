@@ -714,7 +714,7 @@ if hotel_code:
             with cnt_u_col:
                 nu = st.number_input(f"unknowns for {hole_label}", min_value=0, step=1, value=int(defaults.get("num_unknowns", 0) or 0), key=f"unk_{hole_label}", label_visibility='collapsed')
             with sb_col:
-                sb = st.multiselect(f"social_behaviour for {hole_label}", ["Solitary", "Social", "Parasitic"], default=defaults["social_behaviour"], key=f"sb_{hole_label}", label_visibility='collapsed')
+                sb = st.multiselect(f"social_behaviour for {hole_label}", ["Solitary", "Social", "Parasitic", "Trophallaxis"], default=defaults["social_behaviour"], key=f"sb_{hole_label}", label_visibility='collapsed')
             with hole_notes_col:
                 notes = st.text_input(f"notes for {hole_label}", key=f"notes_{hole_label}", label_visibility='collapsed')
 
