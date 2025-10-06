@@ -51,6 +51,11 @@ st.markdown("3.	Record the height from the ground.")
 st.markdown("4.	Record the heading in degrees from north. North is zero degrees, east is 90º, south is 180º, and west is 270º.")
 st.markdown("5.	Record if the hotel is mounted vertically or horizontally.")
 st.markdown("6.	Record the latitude and longitude. You can do this on an app on your phone, or on Google Maps. If you aren’t sure how to get the coordinates from Google maps, you can just click where your hotel is on the map and then share that location or link with us and we can do it for you! ")
+st.markdown("7.	The date that you set up the hotel AND, if it's your own nest, the approximate date of manufacture (to see how hotel age impacts use).")
+st.markdown("""
+In summary, I need (1) the hotel code, (2) an image of each hotel set up, (3) the height from the ground to the bottom of the hotel, (4) the heading from north in degrees, (5) how the hotel is mounted (vertical/horizontally/upright), (6) the latitude and the longitude in decimal degrees, and (7) the hotel installation (and manufacture) date.
+""")
+
 
 st.subheader("What if you have your own observation hotels?")
 st.write("""
@@ -77,7 +82,7 @@ st.markdown("""
     b.	On the front (and top) of my hotels I have then written each letter at the nest entrance so that when you take photos of bees at the front it is immediately apparent to which hole it belongs.
 
 4.	For each letter (nest hole) let us know the diameter of the holes (in millimetres) so that they can also be recorded and associated with the data.
-5.	Let us know the materials that were used in the construction of the hotel.
+5.	Let us know the materials that were used in the construction of the hotel (the type of wood if you know, and the material for the clear cover).
 """)
 
 st.image("pageAssets/nestCode.jpg", 
