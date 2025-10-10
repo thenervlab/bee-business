@@ -887,8 +887,6 @@ if submitted:
                                 uploaded_csvs.append(obs_csv_filename)
                             except Exception as e:
                                 st.warning(f"CSV upload failed for hole {hole_label}: {e}")
-
-
                 # Save all rows locally at once
                 #if sci or nm > 0 or nf > 0 or sb or notes_text or nc > 0 or nu > 0:
                 #    st.info("No hole rows had data to submit. Please fill at least one hole row.")
