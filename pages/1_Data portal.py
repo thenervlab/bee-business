@@ -797,8 +797,6 @@ if hotel_code:
 
     
 # Preserve information even if submitted fails
-st.session_state.observer = observer
-st.session_state.hotel_code = hotel_code
 st.session_state.photo = photo
 st.session_state.hole_values = hole_values
 st.session_state.notes_submission = notes_submission
