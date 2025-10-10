@@ -619,7 +619,7 @@ if hotel_code:
             obs_date = st.date_input("Obs. date*", value=date.today(), key="obs_date")
             obs_time = st.time_input("Obs. time (24-hour)*", value=datetime.now().time(), key="obs_time")
             # Image uploader now sits under date/time in the left column
-            photo = st.file_uploader("Image", type=["jpg", "jpeg", "png"], key="photo")
+            photo = st.file_uploader("Image*", type=["jpg", "jpeg", "png"], key="photo")
         with col_mid:
             # Submission-level notes (standalone, before nest holes)
             notes_submission = st.text_area("Overall notes", value="", key="notes_submission")
@@ -802,6 +802,7 @@ if submitted:
     if not observer or not hotel_code:
         st.error("⚠️ Please fill in all required fields: Recorded by and Hotel code")
         if not photo:
+            st.info("No photo uploaded. This is required, please go up and upload one!.")
             st.error("⚠️ Please fill in all required fields: Upload a photo")
         else:
             submission_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
