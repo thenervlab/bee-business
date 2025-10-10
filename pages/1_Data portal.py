@@ -806,7 +806,6 @@ if submitted:
         if not photo:
             st.error("⚠️ No photo uploaded. This is required, please go up and upload one!")
                     # Preserve information even if submitted fails
-            st.session_state.photo = photo
             st.session_state.hole_values = hole_values
             st.session_state.notes_submission = notes_submission
             st.session_state.DATA_FILE = DATA_FILE
