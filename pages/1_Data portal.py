@@ -621,7 +621,7 @@ if hotel_code:
             photo = st.file_uploader("Image*", type=["jpg", "jpeg", "png"], key="photo")
         with col_mid:
             # Submission-level notes (standalone, before nest holes)
-            notes_submission = st.text_area("Overall notes", value="", key="notes_submissionKey")
+            notes_submission = st.text_area("Overall notes", value="", key="notes_submission")
         with col_right:
             # Show a small logo or hotel image. Try multiple candidate paths
             # Render images at a fixed display width to avoid overly tall renders
