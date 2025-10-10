@@ -885,8 +885,17 @@ if submitted:
          # If NO DATA ARE PROVIDED, CHECK WITH THE USER
             else:
                 st.info("No hole rows had data to submit. Please fill at least one hole row.")
-                # Add a confirmation button
-                if st.button("✅ I understand, continue anyway"):
+                    # Set up the clicked button as FALSE for default
+                if 'clicked' not in st.session_state:
+                    st.session_state.clicked = False
+                    # Set as TRUE if clicked
+                def click_button():
+                    st.session_state.clicked = True
+                    # Ask for user input using a confirmation button
+                st.button("✅ I understand, continue anyway", on_click=click_button):
+
+                # If button is clicked, continue
+                if st.session_state.clicked:
                     st.success("Proceeding without any hole row data...")
                     # Create a single submission_id for this form submit (used below)
                     # We'll create submission_id outside the loop once; if not present, create it now
