@@ -892,7 +892,7 @@ if submitted:
                 def click_button():
                     st.session_state.clicked = True
                     # Ask for user input using a confirmation button
-                st.button("✅ I understand, continue anyway", on_click=click_button):
+                st.button("✅ I understand, continue anyway", on_click=click_button)
 
                 # If button is clicked, continue
                 if st.session_state.clicked:
