@@ -897,4 +897,7 @@ if submitted:
                 #        save_observation(rows_to_save, hotel_code, DATA_FILE, dbx)
                 #else:
                     save_observation(rows_to_save, hotel_code, DATA_FILE, dbx)
+
+            else:
+                if st.button("✅ SUCCESS!"):
             
