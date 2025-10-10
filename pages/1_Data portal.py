@@ -933,7 +933,7 @@ if submitted:
                         "hotel_code": hotel_code,
                         "obs_date": str(obs_date),
                         "obs_time": str(obs_time),
-                        "nest_hole": hole_label,
+                        "nest_hole": "all_empty",
                         "scientific_name": sci,
                         "num_cells": nc,
                         "num_males": nm,
@@ -960,5 +960,3 @@ if submitted:
 
                     # Save all rows locally at once
                     save_observation(rows_to_save, hotel_code, DATA_FILE, dbx)
-                else:
-                    st.info("No hole rows had data to submit and the user (that's you) chose not to continue.")
