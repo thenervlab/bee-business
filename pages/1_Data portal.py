@@ -958,5 +958,7 @@ if submitted:
                     except Exception as e:
                         st.warning(f"CSV upload failed for hole {hole_label}: {e}")
 
-
+                    # Save all rows locally at once
+                    save_observation(rows_to_save, hotel_code, DATA_FILE, dbx)
+                else:
                     st.info("No hole rows had data to submit and the user (that's you) chose not to continue.")
