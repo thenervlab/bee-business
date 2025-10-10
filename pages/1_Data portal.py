@@ -900,4 +900,4 @@ if submitted:
 
             else:
                 if st.button("✅ SUCCESS!"):
-            
+                    st.success("Proceeding without any hole row data...")
