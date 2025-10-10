@@ -105,7 +105,6 @@ def save_observation(rows_to_save, hotel_code, DATA_FILE, dbx):
             except Exception as e:
                 st.error(f"Failed to write observations to {DATA_FILE}: {e}")
 
-
 secrets = load_secrets()
 
 APP_KEY = secrets.get("DROPBOX_APP_KEY")
@@ -617,9 +616,9 @@ if hotel_code:
         col_left, col_mid, col_right = st.columns([1, 1, 1])
         with col_left:
             obs_date = st.date_input("Obs. date*", value=date.today(), key="obs_date")
-            obs_time = st.time_input("Obs. time (24-hour)*", value=datetime.now().time(), key="obs_time")
+            obs_time = st.time_input("Obs. time*", value=datetime.now().time(), key="obs_time")
             # Image uploader now sits under date/time in the left column
-            photo = st.file_uploader("Image*", type=["jpg", "jpeg", "png"], key="photo")
+            photo = st.file_uploader("Image", type=["jpg", "jpeg", "png"], key="photo")
         with col_mid:
             # Submission-level notes (standalone, before nest holes)
             notes_submission = st.text_area("Overall notes", value="", key="notes_submission")
@@ -807,100 +806,28 @@ if submitted:
         # --- Upload photo to Dropbox once (if provided) ---
         photo_link = None
         photo_bytes = None
-        if not photo:
-            st.error("⚠️ No photo uploaded. This is required, please go up and upload one!")
-        else:
+        if photo:
             photo_bytes = photo.read()
 
-            rows_to_save = []
-            uploaded_csvs = []
+        rows_to_save = []
+        uploaded_csvs = []
 
-            # Read fresh values from st.session_state to avoid using potentially stale captured dict
-            for hole_label in list(hole_values.keys()):
-                sci = str(st.session_state.get(f"sci_{hole_label}", "")).strip()
-                nc = st.session_state.get(f"cells_{hole_label}", 0)
-                nm = st.session_state.get(f"males_{hole_label}", 0)
-                nf = st.session_state.get(f"fem_{hole_label}", 0)
-                nu = st.session_state.get(f"unk_{hole_label}", 0)
-                sb = st.session_state.get(f"sb_{hole_label}", []) or []
-                notes_text = str(st.session_state.get(f"notes_{hole_label}", "")).strip()
+        # Read fresh values from st.session_state to avoid using potentially stale captured dict
+        for hole_label in list(hole_values.keys()):
+            sci = str(st.session_state.get(f"sci_{hole_label}", "")).strip()
+            nc = st.session_state.get(f"cells_{hole_label}", 0)
+            nm = st.session_state.get(f"males_{hole_label}", 0)
+            nf = st.session_state.get(f"fem_{hole_label}", 0)
+            nu = st.session_state.get(f"unk_{hole_label}", 0)
+            sb = st.session_state.get(f"sb_{hole_label}", []) or []
+            notes_text = str(st.session_state.get(f"notes_{hole_label}", "")).strip()
 
-
-                     # IF THERE ARE DATA TO UPLOAD:
-            if sci or nm > 0 or nf > 0 or sb or notes_text or nc > 0 or nu > 0: 
-                # Create a single submission_id for this form submit (used below)
-                # We'll create submission_id outside the loop once; if not present, create it now
-                if "submission_id" not in locals():
-                    submission_id = str(uuid.uuid4())
-
-                    # Upload photo once and reuse photo_link
-                    if photo_bytes:
-                        try:
-                            photo_filename = f"{submission_id}_{photo.name}"
-                            dropbox_path = f"/observations/photos/{photo_filename}"
-                            dbx.files_upload(photo_bytes, dropbox_path, mode=dropbox.files.WriteMode.overwrite)
-                            shared_link = dbx.sharing_create_shared_link_with_settings(dropbox_path)
-                            photo_link = shared_link.url.replace("?dl=0", "?raw=1")
-                        except Exception as e:
-                            st.warning(f"Photo upload failed: {e}")
-                            photo_link = None
-                    else:
-                        photo_link = None
-
-                obs_id = str(uuid.uuid4())
-
-                obs_data = {
-                    "obs_id": obs_id,
-                    "submission_id": submission_id,
-                    "observer": observer,
-                    "hotel_code": hotel_code,
-                    "obs_date": str(obs_date),
-                    "obs_time": str(obs_time),
-                    "nest_hole": hole_label,
-                    "scientific_name": sci,
-                    "num_cells": nc,
-                    "num_males": nm,
-                    "num_females": nf,
-                    "num_unknowns": nu,
-                    "social_behaviour": ", ".join(sb),
-                    "notes": notes_text,
-                    "submission_notes": notes_submission,
-                    "photo_link": photo_link,
-                    "submission_time": submission_time
-                }
-
-                rows_to_save.append(obs_data)
-
-                # Upload per-observation CSV (optional)
-                try:
-                    new_df = pd.DataFrame([obs_data])
-                    obs_csv_filename = f"{obs_id}.csv"
-                    csv_buffer = new_df.to_csv(index=False, quoting=csv.QUOTE_MINIMAL).encode("utf-8")
-                    dbx.files_upload(csv_buffer, f"/observations/csv/{obs_csv_filename}", mode=dropbox.files.WriteMode.overwrite)
-                    uploaded_csvs.append(obs_csv_filename)
-                except Exception as e:
-                    st.warning(f"CSV upload failed for hole {hole_label}: {e}")
-                # Save all rows locally at once
-                save_observation(rows_to_save, hotel_code, DATA_FILE, dbx)
-         # If NO DATA ARE PROVIDED, CHECK WITH THE USER
-            else:
-                st.info("No hole rows had data to submit. Please fill at least one hole row.")
-                    # Set up the clicked button as FALSE for default
-                if 'clicked' not in st.session_state:
-                    st.session_state.clicked = False
-                    # Set as TRUE if clicked
-                def click_button():
-                    st.session_state.clicked = True
-                    # Ask for user input using a confirmation button
-                st.button("✅ I understand, continue anyway", on_click=click_button)
-
-                # If button is clicked, continue
-                if st.session_state.clicked:
-                    st.success("Proceeding without any hole row data...")
+            # Consider a hole 'filled' if it has a scientific name, counts, social behaviour, or notes
+            if sci or nm > 0 or nf > 0 or sb or notes_text or nc > 0 or nu > 0:
                     # Create a single submission_id for this form submit (used below)
                     # We'll create submission_id outside the loop once; if not present, create it now
                     if "submission_id" not in locals():
-                        submission_id = str(uuid.uuid4())           
+                        submission_id = str(uuid.uuid4())
 
                         # Upload photo once and reuse photo_link
                         if photo_bytes:
@@ -949,7 +876,78 @@ if submitted:
                         uploaded_csvs.append(obs_csv_filename)
                     except Exception as e:
                         st.warning(f"CSV upload failed for hole {hole_label}: {e}")
+            else:
+                 # If NO DATA ARE PROVIDED, CHECK WITH THE USER
+                st.info("No hole rows had data to submit. Please fill at least one hole row.")
+                    # Set up the clicked button as FALSE for default
+                if 'clicked' not in st.session_state:
+                    st.session_state.clicked = False
+                    # Set as TRUE if clicked
+                def click_button():
+                    st.session_state.clicked = True
+                    # Ask for user input using a confirmation button
+                st.button("✅ I understand, continue anyway", on_click=click_button)
 
-                    # Save all rows locally at once
-                    save_observation(rows_to_save, hotel_code, DATA_FILE, dbx)
-                    st.success("All done and saved ✅")
+                # If button is clicked, continue
+                if st.session_state.clicked:
+                    st.success("Proceeding without any hole row data...")
+                     # Create a single submission_id for this form submit (used below)
+                    # We'll create submission_id outside the loop once; if not present, create it now
+                    if "submission_id" not in locals():
+                        submission_id = str(uuid.uuid4())
+
+                        # Upload photo once and reuse photo_link
+                        if photo_bytes:
+                            try:
+                                photo_filename = f"{submission_id}_{photo.name}"
+                                dropbox_path = f"/observations/photos/{photo_filename}"
+                                dbx.files_upload(photo_bytes, dropbox_path, mode=dropbox.files.WriteMode.overwrite)
+                                shared_link = dbx.sharing_create_shared_link_with_settings(dropbox_path)
+                                photo_link = shared_link.url.replace("?dl=0", "?raw=1")
+                            except Exception as e:
+                                st.warning(f"Photo upload failed: {e}")
+                                photo_link = None
+                        else:
+                            photo_link = None
+
+                    obs_id = str(uuid.uuid4())
+
+                    obs_data = {
+                        "obs_id": obs_id,
+                        "submission_id": submission_id,
+                        "observer": observer,
+                        "hotel_code": hotel_code,
+                        "obs_date": str(obs_date),
+                        "obs_time": str(obs_time),
+                        "nest_hole": hole_label,
+                        "scientific_name": sci,
+                        "num_cells": nc,
+                        "num_males": nm,
+                        "num_females": nf,
+                        "num_unknowns": nu,
+                        "social_behaviour": ", ".join(sb),
+                        "notes": notes_text,
+                        "submission_notes": notes_submission,
+                        "photo_link": photo_link,
+                        "submission_time": submission_time
+                    }
+
+                    rows_to_save.append(obs_data)
+
+                    # Upload per-observation CSV (optional)
+                    try:
+                        new_df = pd.DataFrame([obs_data])
+                        obs_csv_filename = f"{obs_id}.csv"
+                        csv_buffer = new_df.to_csv(index=False, quoting=csv.QUOTE_MINIMAL).encode("utf-8")
+                        dbx.files_upload(csv_buffer, f"/observations/csv/{obs_csv_filename}", mode=dropbox.files.WriteMode.overwrite)
+                        uploaded_csvs.append(obs_csv_filename)
+                    except Exception as e:
+                        st.warning(f"CSV upload failed for hole {hole_label}: {e}")
+            
+
+        # Save all rows locally at once
+        if rows_to_save:
+            # Save all rows locally at once
+            save_observation(rows_to_save, hotel_code, DATA_FILE, dbx)
+        else:
+            st.info("No hole rows had data to submit and the user (that's you) chose not to continue.")
