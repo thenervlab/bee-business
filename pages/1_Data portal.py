@@ -795,17 +795,15 @@ if hotel_code:
             submitted = st.form_submit_button("Submit")
             st.markdown("</div>", unsafe_allow_html=True)
 
-    
-# Preserve information even if submitted fails
-st.session_state.photo = photo
-st.session_state.hole_values = hole_values
-st.session_state.notes_submission = notes_submission
-st.session_state.DATA_FILE = DATA_FILE
-st.session_state.dbx = dbx
-
 
 
 if submitted:
+        # Preserve information even if submitted fails
+    st.session_state.photo = photo
+    st.session_state.hole_values = hole_values
+    st.session_state.notes_submission = notes_submission
+    st.session_state.DATA_FILE = DATA_FILE
+    st.session_state.dbx = dbx
     # Validate required top-level fields
     if not observer or not hotel_code:
         st.error("⚠️ Please fill in all required fields: Recorded by and Hotel code")
