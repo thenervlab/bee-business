@@ -798,18 +798,19 @@ if hotel_code:
 
 
 if submitted:
-        # Preserve information even if submitted fails
-    st.session_state.photo = photo
-    st.session_state.hole_values = hole_values
-    st.session_state.notes_submission = notes_submission
-    st.session_state.DATA_FILE = DATA_FILE
-    st.session_state.dbx = dbx
+
     # Validate required top-level fields
     if not observer or not hotel_code:
         st.error("⚠️ Please fill in all required fields: Recorded by and Hotel code")
     else:
         if not photo:
             st.error("⚠️ No photo uploaded. This is required, please go up and upload one!")
+                    # Preserve information even if submitted fails
+            st.session_state.photo = photo
+            st.session_state.hole_values = hole_values
+            st.session_state.notes_submission = notes_submission
+            st.session_state.DATA_FILE = DATA_FILE
+            st.session_state.dbx = dbx
             st.stop()
         else:
             submission_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
