@@ -810,8 +810,7 @@ if submitted:
         if photo:
             photo_bytes = photo.read()
         else:
-            st.info("No photo uploaded. This is required, please go up and upload one!.")
-            st.error("⚠️ Please fill in all required fields: Upload a photo")
+            st.error("⚠️ No photo uploaded. This is required, please go up and upload one!")
 
         rows_to_save = []
         uploaded_csvs = []
@@ -827,7 +826,7 @@ if submitted:
             notes_text = str(st.session_state.get(f"notes_{hole_label}", "")).strip()
 
             # Consider a hole 'filled' if it has a scientific name, counts, social behaviour, or notes
-            if sci or nm > 0 or nf > 0 or sb or notes_text or nc > 0 or nu > 0:
+            if sci or nm > 0 or nf >= 0 or sb or notes_text or nc > 0 or nu > 0:
                     # Create a single submission_id for this form submit (used below)
                     # We'll create submission_id outside the loop once; if not present, create it now
                     if "submission_id" not in locals():
