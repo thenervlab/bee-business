@@ -601,7 +601,7 @@ if observer and st.session_state.get(f"pass_ok_{observer}", False):
 
 # Only when hotel_code is selected do we show the observation form
 if hotel_code:
-    with st.form("observation_form", clear_on_submit=True):
+    with st.form("observation_form", clear_on_submit=False):
 
         # --- Section 2: observation date/time/image ---
         st.header("Observation details")
@@ -665,6 +665,8 @@ if hotel_code:
                     st.info("No logo found in data/ or assets/ (checked data/logo.png, assets/logo.png, and hotel images).")
             except Exception:
                 pass
+
+
 
         # --- Section 3: grid for nest holes (rows A-K or from HOTEL_HOLES) ---
         st.header("Nest holes")
