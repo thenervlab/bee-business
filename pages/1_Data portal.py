@@ -796,6 +796,17 @@ if hotel_code:
             st.markdown("</div>", unsafe_allow_html=True)
 
     
+# Preserve information even if submitted fails
+st.session_state.observer = observer
+st.session_state.hotel_code = hotel_code
+st.session_state.photo = photo
+st.session_state.hole_values = hole_values
+st.session_state.notes_submission = notes_submission
+st.session_state.DATA_FILE = DATA_FILE
+st.session_state.dbx = dbx
+
+
+
 if submitted:
     # Validate required top-level fields
     if not observer or not hotel_code:
