@@ -810,6 +810,7 @@ if submitted:
     else:
         if not photo:
             st.error("⚠️ No photo uploaded. This is required, please go up and upload one!")
+            st.stop()
         else:
             submission_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
