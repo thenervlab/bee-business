@@ -24,6 +24,7 @@ installPage = st.Page("pages/5_Hotel installation.py", title="Install your hotel
 CheckPage = st.Page("pages/4_Checking your hotel.py", title="Check your hotel", icon = ":material/mystery:")
 IDPage = st.Page("pages/7_Bee identification resources.py", title="Identification resources", icon = ":material/frame_bug:")
 SpecimenPage = st.Page("pages/6_Collecting specimens.py", title="Collecting specimens", icon = ":material/labs:")
+PhotoPage = st.Page("pages/8_photoTips.py", title="Photo tips", icon = ":material/camera_indoor:")
 contactPage =  st.Page("pages/3_Contact.py", title="Contact us", icon = ":material/mail:")
 
 pg = st.navigation(
