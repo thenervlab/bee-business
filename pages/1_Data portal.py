@@ -701,7 +701,7 @@ if hotel_code:
         # split the rightmost header column into Social behaviours and Notes labels
         try:
             hdr_sb, hdr_notes = hdr_c_sb_notes.columns([2, 2])
-            hdr_sb.markdown("<div style='font-weight:600;' title='Behaviour observed at this hole (Solitary, Social, Parasitic)'>Socialilty</div>", unsafe_allow_html=True)
+            hdr_sb.markdown("<div style='font-weight:600;' title='Behaviour observed at this hole (Solitary, Social, Parasitic, Trophallaxis) — ask us if you need more added.'>Socialilty</div>", unsafe_allow_html=True)
             hdr_notes.markdown("<div style='font-weight:600;'>Notes</div>", unsafe_allow_html=True)
         except Exception:
             hdr_c_sb_notes.markdown("**Social behaviours / Notes**")
