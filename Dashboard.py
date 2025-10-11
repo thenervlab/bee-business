@@ -30,7 +30,7 @@ contactPage =  st.Page("pages/3_Contact.py", title="Contact us", icon = ":materi
 pg = st.navigation(
     {
             "": [dashPage, portalPage],
-            "Resources": [installPage, CheckPage, IDPage, SpecimenPage],
+            "Resources": [installPage, CheckPage, IDPage, SpecimenPage, contactPage],
             " ": [contactPage],
         },
 )
