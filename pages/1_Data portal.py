@@ -122,6 +122,15 @@ timezone = st_javascript("""await (async () => {
 
 st.write("LOOK AT ME!")
 st.write(timezone)
+tz = pytz.timezone(timezone)
+
+# Create a timezone-aware datetime and extract the date
+local_now = datetime.now(tz)
+local_date = local_now.date()
+
+# Use that localized date in date_input
+obs_date = st.date_input("Obs. date*", value=local_date)
+st.write("User timezone:", tz_name)
 
 # Initialize Dropbox client only if credentials are available
 dbx = None
