@@ -906,7 +906,7 @@ if submitted:
                 # If NO DATA ARE PROVIDED, CHECK WITH THE USER
                 st.info("No hole rows had data to submit. Please fill at least one hole row.")
                     # Ask for user input using a confirmation button
-                if st.button("✅ I understand, continue anyway", key = "emptyQuery"):
+                if st.button("❌ No data are provided, that's okay but please go back up and, for a single hole, select 'Empty' for the Scientific name", key = "emptyQuery"):
                     st.success("Proceeding without any hole row data...")
                     # Create a single submission_id for this form submit (used below)
                     # We'll create submission_id outside the loop once; if not present, create it now
