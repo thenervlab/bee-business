@@ -121,10 +121,6 @@ timezone = st_javascript("""await (async () => {
             return userTimezone
             })().then(returnValue => returnValue)""")
 
-st.write("LOOK AT ME!")
-st.write(timezone)
-
-st.write(datetime.now(pytz.timezone(timezone)))
 
 # Initialize Dropbox client only if credentials are available
 dbx = None
