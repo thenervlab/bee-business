@@ -9,7 +9,7 @@ import json
 import os
 import requests
 from io import StringIO
-import streamlit-javascript
+import streamlit_javascript
 
 
 
