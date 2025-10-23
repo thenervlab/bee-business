@@ -124,7 +124,7 @@ timezone = st_javascript("""await (async () => {
 st.write("LOOK AT ME!")
 st.write(timezone)
 
-st.write(datetime.now(pytz.timezone(timezone)))
+st.write(date.today(pytz.timezone(timezone)))
 
 # Initialize Dropbox client only if credentials are available
 dbx = None
@@ -630,8 +630,9 @@ if hotel_code:
         # (1) Obs date/time + image uploader, (2) Overall Notes, (3) Logo/image display
         col_left, col_mid, col_right = st.columns([1, 1, 1])
         with col_left:
-            obs_date = st.date_input("Obs. date*", value=date.today(), key="obs_date")
-            obs_time = st.time_input("Obs. time (24-hour)*", value=datetime.now().time(), key="obs_time")
+            
+            obs_date = st.date_input("Obs. date*", value=date.today(pytz.timezone(timezone)), key="obs_date")
+            obs_time = st.time_input("Obs. time (24-hour)*", value=datetime.now(pytz.timezone(timezone)), key="obs_time")
             # Image uploader now sits under date/time in the left column
             photo = st.file_uploader("Image*", type=["jpg", "jpeg", "png"], key="photo")
         with col_mid:
