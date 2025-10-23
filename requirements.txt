@@ -2,4 +2,4 @@ streamlit
 pandas
 plotly
 dropbox
-streamlit_javascript
+streamlit-javascript
