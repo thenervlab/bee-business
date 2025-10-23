@@ -9,6 +9,7 @@ import json
 import os
 import requests
 from io import StringIO
+import pytz
 
 # --- Load secrets: prefer Streamlit secrets, then environment, then local secrets.json ---
 def load_secrets():
@@ -110,6 +111,40 @@ secrets = load_secrets()
 APP_KEY = secrets.get("DROPBOX_APP_KEY")
 APP_SECRET = secrets.get("DROPBOX_APP_SECRET")
 REFRESH_TOKEN = secrets.get("DROPBOX_REFRESH_TOKEN")
+
+# Get the time zone from the local computer
+# --- Get user's timezone from JS (only runs once) ---
+if "user_tz" not in st.session_state:
+    js = """
+    <script>
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    window.parent.document.cookie = "user_tz=" + tz;
+    </script>
+    """
+    st.components.v1.html(js, height=0)
+
+# Try to load from existing state or cookies
+user_tz = st.session_state.get("user_tz")
+cookies = st.experimental_get_cookies()
+
+if not user_tz:
+    for k, v in cookies.items():
+        if "GMT" not in v and "/" in v:  # crude filter for timezone strings
+            st.session_state["user_tz"] = v
+            user_tz = v
+            break
+
+# Use detected timezone (fallback to server if missing)
+if user_tz:
+    tzinfo = pytz.timezone(user_tz)
+    local_now = datetime.now(tzinfo).replace(microsecond=0)
+else:
+    local_now = datetime.now().replace(microsecond=0)
+
+local_today = local_now.date()
+local_time = local_now.time()
+
+
 
 # Initialize Dropbox client only if credentials are available
 dbx = None
@@ -615,8 +650,8 @@ if hotel_code:
         # (1) Obs date/time + image uploader, (2) Overall Notes, (3) Logo/image display
         col_left, col_mid, col_right = st.columns([1, 1, 1])
         with col_left:
-            obs_date = st.date_input("Obs. date*", value=date.today(), key="obs_date")
-            obs_time = st.time_input("Obs. time (24-hour)*", value=datetime.now().time(), key="obs_time")
+            obs_date = st.date_input("Obs. date*", value=local_today, key="obs_date")
+            obs_time = st.time_input("Obs. time (24-hour)*", value=local_time, key="obs_time")
             # Image uploader now sits under date/time in the left column
             photo = st.file_uploader("Image*", type=["jpg", "jpeg", "png"], key="photo")
         with col_mid:
