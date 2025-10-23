@@ -281,7 +281,7 @@ try:
         sp = obs_df['scientific_name'].fillna('Unknown')
         sp_counts = sp.value_counts().reset_index()
         sp_counts.columns = ['Species', 'Observations']
-        sp_counts = sp_counts[sp_counts['scientific_name'] != "Empty"]
+        sp_counts = sp_counts[sp_counts['Species'] != "Empty"]
         # Bee-inspired palette (yellows and black)
         bee_colors = ['#F6C85F', '#F4A460', '#E07A3C', '#B5651D', '#3A3A3A']
         fig = px.bar(sp_counts, x='Observations', y='Species', orientation='h', color='Observations', color_continuous_scale=['#FFF1C9', '#F6C85F', '#E07A3C', '#B5651D', '#3A3A3A'])
