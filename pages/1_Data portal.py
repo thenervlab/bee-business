@@ -9,7 +9,9 @@ import json
 import os
 import requests
 from io import StringIO
-import pytz
+import streamlit_javascript
+
+
 
 # --- Load secrets: prefer Streamlit secrets, then environment, then local secrets.json ---
 def load_secrets():
@@ -112,6 +114,14 @@ APP_KEY = secrets.get("DROPBOX_APP_KEY")
 APP_SECRET = secrets.get("DROPBOX_APP_SECRET")
 REFRESH_TOKEN = secrets.get("DROPBOX_REFRESH_TOKEN")
 
+timezone = st_javascript("""await (async () => {
+            const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            console.log(userTimezone)
+            return userTimezone
+            })().then(returnValue => returnValue)""")
+
+st.write("LOOK AT ME!")
+st.write(timezone)
 
 # Initialize Dropbox client only if credentials are available
 dbx = None
