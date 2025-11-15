@@ -614,7 +614,7 @@ if observer and st.session_state.get(f"pass_ok_{observer}", False):
 
 # Only when hotel_code is selected do we show the observation form
 if hotel_code:
-    with st.form("observation_form", clear_on_submit=False, enter_to_submit  = False):
+    with st.form("observation_form", clear_on_submit=False, enter_to_submit = False):
 
         # --- Section 2: observation date/time/image ---
         st.header("Observation details")
@@ -692,6 +692,7 @@ if hotel_code:
         # --- Consolidated one-time header row for the Nest Holes table ---
         # Render a single header row with one label per data column:
         # Hole | Scientific name | Cells | ♂️ | ♀️ | ❔ | Social behaviours | Notes
+            # setting widths of column groups
         hdr_c0, hdr_c1, hdr_c_counts, hdr_c_sb_notes = st.columns([1, 4, 4, 4])
         # First two columns: Hole and Scientific name
         try:
@@ -758,7 +759,7 @@ if hotel_code:
                 if hotel_code:
                     key = (str(hotel_code), str(hole_label))
                     last_entry = latest_by_hotel_hole.get(key)
-                    if last_entry is not None:
+                    if last_entry is None:
                         defaults = {
                             "scientific_name": last_entry.get("scientific_name", ""),
                             "num_males": int(last_entry.get("num_males", 0) or 0),
