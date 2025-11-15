@@ -757,7 +757,7 @@ if hotel_code:
             sb_col, hole_notes_col = c_sb_notes.columns([2, 2])
 
             # Prepopulate defaults if possible (use authoritative df and pick most recent by submission_time)
-            defaults = {"scientific_name": "", "num_males": 0, "num_females": 0, "social_behaviour": []}
+            defaults = {"scientific_name": "", "num_cells": 0, "num_males": 0, "num_females": 0, "num_unknowns": 0, "social_behaviour": []}
             try:
                 if hotel_code:
                     key = (str(hotel_code), str(hole_label))
@@ -765,8 +765,10 @@ if hotel_code:
                     if last_entry is not None:
                         defaults = {
                             "scientific_name": last_entry.get("scientific_name", ""),
+                            "num_cells": int(last_entry.get("num_cells", 0) or 0),
                             "num_males": int(last_entry.get("num_males", 0) or 0),
                             "num_females": int(last_entry.get("num_females", 0) or 0),
+                            "num_unknowns": int(last_entry.get("num_unknowns", 0) or 0),
                             "social_behaviour": last_entry.get("social_behaviour", "").split(", ") if last_entry.get("social_behaviour") else []
                         }
             except Exception:
@@ -786,13 +788,13 @@ if hotel_code:
                     default_index = 0
                 sci = st.selectbox(label, local_species, index=default_index, key=f"sci_{hole_label}", label_visibility='collapsed')
             with cnt_cells_col:
-                ncells = st.number_input(f"cells for {hole_label}", min_value=0, step=1, value=int(defaults.get("num_cells", 0) or 0), key=f"cells_{hole_label}", label_visibility='collapsed')
+                ncells = st.number_input(f"cells for {hole_label}", min_value=0, step=1, value=defaults["num_cells"], key=f"cells_{hole_label}", label_visibility='collapsed')
             with cnt_m_col:
                 nm = st.number_input(f"males for {hole_label}", min_value=0, step=1, value=defaults["num_males"], key=f"males_{hole_label}", label_visibility='collapsed')
             with cnt_f_col:
                 nf = st.number_input(f"females for {hole_label}", min_value=0, step=1, value=defaults["num_females"], key=f"fem_{hole_label}", label_visibility='collapsed')
             with cnt_u_col:
-                nu = st.number_input(f"unknowns for {hole_label}", min_value=0, step=1, value=int(defaults.get("num_unknowns", 0) or 0), key=f"unk_{hole_label}", label_visibility='collapsed')
+                nu = st.number_input(f"unknowns for {hole_label}", min_value=0, step=1, value=defaults["num_unknowns"], key=f"unk_{hole_label}", label_visibility='collapsed')
             with sb_col:
                 sb = st.multiselect(f"social_behaviour for {hole_label}", ["Solitary", "Social", "Parasitic", "Trophallaxis"], default=defaults["social_behaviour"], key=f"sb_{hole_label}", label_visibility='collapsed')
             with hole_notes_col:
