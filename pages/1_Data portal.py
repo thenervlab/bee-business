@@ -282,7 +282,7 @@ def reconcile_and_upload_master(dbx_client, local_path=DATA_FILE):
     if dbx_client is not None:
         try:
             # Gather per-observation CSVs
-            folder_path = '/observations/csv'
+            folder_path = '/observations.csv'
             has_more = True
             cursor = None
             entries = []
