@@ -239,7 +239,7 @@ if oh_df is not None:
     except Exception as e:
         st.warning(f"Failed to process observer/hotel CSV: {e}. Using defaults.")
 
-DATA_FILE = "BeeBox_Dorey/observations/observations.csv"
+DATA_FILE = "observations/observations.csv"
 
 # Load existing local data
 def safe_read_csv(path):
@@ -264,7 +264,6 @@ def safe_read_csv(path):
 
 df = safe_read_csv(DATA_FILE)
 
-print(df)
 
 def reconcile_and_upload_master(dbx_client, local_path=DATA_FILE):
     """Reconcile local observations file with per-observation CSVs stored in Dropbox.
