@@ -264,6 +264,8 @@ def safe_read_csv(path):
 
 df = safe_read_csv(DATA_FILE)
 
+print(df)
+
 def reconcile_and_upload_master(dbx_client, local_path=DATA_FILE):
     """Reconcile local observations file with per-observation CSVs stored in Dropbox.
     This function:
