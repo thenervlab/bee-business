@@ -139,6 +139,7 @@ else:
 
 # --- Observer → Hotel mapping ---
 # Default fallbacks (used if no CSV is provided or CSV is malformed)
+    # I don't belive that this will get used again, unless everything disappears from the dropbox/GitHub :) 
 DEFAULT_OBSERVER_HOTELS = {
     "Alice": ["H001", "H002"],
     "Bob": ["H003"],
@@ -238,7 +239,7 @@ if oh_df is not None:
     except Exception as e:
         st.warning(f"Failed to process observer/hotel CSV: {e}. Using defaults.")
 
-DATA_FILE = "observations.csv"
+DATA_FILE = "BeeBox_Dorey/observations/observations.csv"
 
 # Load existing local data
 def safe_read_csv(path):
