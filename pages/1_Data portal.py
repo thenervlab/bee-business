@@ -63,8 +63,11 @@ def save_observation(rows_to_save, hotel_code, DATA_FILE, dbx):
                 "scientific_name",
                 "num_males",
                 "num_females",
+                "num_cells",
+                "num_unknowns",
                 "social_behaviour",
                 "notes",
+                "submission_notes",
                 "submission_id",
                 "photo_link",
                 "submission_time"
@@ -759,7 +762,7 @@ if hotel_code:
                 if hotel_code:
                     key = (str(hotel_code), str(hole_label))
                     last_entry = latest_by_hotel_hole.get(key)
-                    if last_entry is None:
+                    if last_entry is not None:
                         defaults = {
                             "scientific_name": last_entry.get("scientific_name", ""),
                             "num_males": int(last_entry.get("num_males", 0) or 0),
