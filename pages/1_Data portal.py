@@ -70,7 +70,8 @@ def save_observation(rows_to_save, hotel_code, DATA_FILE, dbx):
                 "submission_notes",
                 "submission_id",
                 "photo_link",
-                "submission_time"
+                "submission_time",
+                "manually_checked"
             ]
             all_df = pd.DataFrame(rows_to_save)
             # Ensure all columns exist in DataFrame
