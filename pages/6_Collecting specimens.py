@@ -2,7 +2,7 @@ import streamlit as st
 
 st.title("Specimen collection")
 st.write("""
-The accurate identification of each species occupying the observation hotels is critical to the success of this project. If neither you or the research team can identify the species occupying your hotels from photos, then you may be asked to collect specimens for further identification and potential DNA barcoding. 
+The accurate identification of each species occupying the observation hotels is critical to the success of this project. If neither you or the research team can identify the species occupying your hotels from photos, then you may be asked to collect specimens for further identification and potential DNA barcoding. I have also produced a guide on collecting specimens more broadly [here](https://midi-cashew-42a.notion.site/Insect-collection-guide-2e13a51455b98031a6f7daae376a5a1f). Please do have a read, especially about data collection, if you want to collect specimens :) 
 """)
 
 
