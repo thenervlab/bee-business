@@ -480,9 +480,9 @@ except Exception:
 # --- Leaderboard (full-width) ---
 st.subheader("🏆 Leaderboard")
 if 'observer_fig' in locals() and observer_fig is not None:
-                st.plotly_chart(observer_fig, use_container_width=True)
-            else:
-                st.info('No species data available yet to build species visualization.')
+    st.plotly_chart(observer_fig, use_container_width=True)
+else:
+    st.info('No species data available yet to build species visualization.')
 # st.markdown(leaderboard_html, unsafe_allow_html=True)
 
 # --- Recent Images Gallery ---
