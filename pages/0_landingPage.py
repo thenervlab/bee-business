@@ -302,7 +302,7 @@ try:
         obsv = obs_df['observer'].fillna('Unknown')
         obsv_counts = obsv.value_counts().reset_index()
         obsv_counts.columns = ['Observer', 'Observations']
-        obsv_counts = obsv_counts[obsv_counts['observer'] != "Empty"]
+        obsv_counts = obsv_counts[obsv_counts['Species'] != "Empty"]
         # Bee-inspired palette (yellows and black)
         bee_colors = ['#F6C85F', '#F4A460', '#E07A3C', '#B5651D', '#3A3A3A']
         figobs = px.bar(obsv_counts, x='Observations', y='Observer', orientation='h', color='Observations', color_continuous_scale=['#FFF1C9', '#F6C85F', '#E07A3C', '#B5651D', '#3A3A3A'])
