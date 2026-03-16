@@ -300,7 +300,7 @@ except Exception as e:
 try:
     if not obs_df.empty and 'observer' in obs_df.columns:
         obsv = obs_df['observer'].fillna('Unknown')
-        obsv_counts = obs_df.drop_duplicates([ "submission_time", "observer"])["obsv"].value_counts().reset_index()
+        obsv_counts = obs_df.drop_duplicates([ "submission_time", "observer"])["obs_df"].value_counts().reset_index()
         obsv_counts.columns = ['Observer', 'Observations']
         obsv_counts = obsv_counts[obsv_counts['Observer'] != "Empty"]
         # Bee-inspired palette (yellows and black)
