@@ -305,10 +305,10 @@ try:
         obsv_counts = obsv_counts[obsv_counts['observer'] != "Empty"]
         # Bee-inspired palette (yellows and black)
         bee_colors = ['#F6C85F', '#F4A460', '#E07A3C', '#B5651D', '#3A3A3A']
-        fig = px.bar(obsv_counts, x='Observations', y='Observer', orientation='h', color='Observations', color_continuous_scale=['#FFF1C9', '#F6C85F', '#E07A3C', '#B5651D', '#3A3A3A'])
-        fig.update_layout(yaxis={'categoryorder':'total ascending'}, coloraxis_showscale=False, plot_bgcolor='white', margin=dict(l=10, r=10, t=40, b=20))
+        figobs = px.bar(obsv_counts, x='Observations', y='Observer', orientation='h', color='Observations', color_continuous_scale=['#FFF1C9', '#F6C85F', '#E07A3C', '#B5651D', '#3A3A3A'])
+        figobs.update_layout(yaxis={'categoryorder':'total ascending'}, coloraxis_showscale=False, plot_bgcolor='white', margin=dict(l=10, r=10, t=40, b=20))
         # store observer figure to render after KPI in a two-column layout
-        observer_fig = fig
+        observer_fig = figobs
     else:
         observer_fig = None
         st.info('No observer data available yet to build observer visualization.')
