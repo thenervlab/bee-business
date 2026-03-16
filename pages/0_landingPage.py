@@ -299,9 +299,9 @@ except Exception as e:
 # Observer visualization from observations (dropbox master preferred)
 try:
     if not obs_df.empty and 'observer' in obs_df.columns:
-        obsv = obs_df['observer'].fillna('Unknown')
-        df_unique = obs_df.drop_duplicates(["obsv","submission_time","observer"])
-        obsv_counts =  df_unique["observer"].value_counts().reset_index()
+        df_unique = obs_df.drop_duplicates(["submission_time","observer"])
+        obsv = df_unique['observer'].fillna('Unknown')
+        obsv_counts = obsv.value_counts().reset_index()
         obsv_counts.columns = ['Observer', 'Observations']
         obsv_counts = obsv_counts[obsv_counts['Observer'] != "Empty"]
         # Bee-inspired palette (yellows and black)
