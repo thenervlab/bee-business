@@ -85,6 +85,9 @@ st.image("pageAssets/BeeAbdomen.png",
 caption= "Bee abdomen anatomy from Michener's 'Bees of the World'", 
 clamp=False)
 
+st.image("pageAssets/Houston1975_sculpturing.png", 
+caption= "Bee sculpturing and punctation from Houston's 1975 'A Revision of the Australian Hylaeine Bees (Hymenoptera : Colletidae)", 
+clamp=False)
 
 
 
