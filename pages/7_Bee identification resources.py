@@ -6,7 +6,7 @@ We should preface this section with 'bee identification is hard' and that it inv
 
 Thankfully, there is a community of people out there that are willing to help and we are here to help as well. When it comes to identifying bees from photos, it can be possible, although not always. If you want help through photos please be sure to take excellent and clear photos of the face, dorsal (back of the) thorax, and abdomen (this is often easier said than done). We may also then ask you to go back and take more photos of specific features, depending on the bee. 
 
-Alternatively, it is often easier to ifentify bees from specimens and we did send most of you a small handful of vials. For that, please go and see the 
+Alternatively, it is often easier to identify bees from specimens and we did send most of you a small handful of vials. For that, please go and see the "[Collecting specimens](https://test-bee-box.streamlit.app/Collecting_specimens)" page.
 
 """)
 
@@ -45,6 +45,7 @@ There's a lot out there in terms of scientific literature and bee taxonomy as we
 - [Revision of the blue-banded bees — *Amegilla (Notomegilla)* and *Amegilla (Zonamegilla)*](https://michaelbatley.github.io/Bee-ID-SM/main.htm) 
 - [Revision of the Australian Hylaeinae I (excluding Hylaeus*) — masked bees](https://uowmailedu-my.sharepoint.com/:b:/g/personal/jdorey_uow_edu_au/EaMFgpbF9yBLiwY7Fnzwwq8BDfiA6vO8gz8tIwyrr2GyYQ?e=1ln4qT)
 - [Revision of the Australian Hylaeinae II (the genus *Hylaeus*) — masked bees](https://uowmailedu-my.sharepoint.com/:b:/g/personal/jdorey_uow_edu_au/EQgp1CSgxsVFp99euFkcaOoBMyn-5RxdLOAJDAh880Paow?e=nXvkB1)
+- [A fodler for colleagues with other bee identification resources — Go into the "Other_BeeKeys" folder](https://uowmailedu-my.sharepoint.com/:f:/g/personal/jdorey_uow_edu_au/EqhUzRQAxmBKg8kIk1H9N_cBvpO1NeQtTNgRtVyWFBX1-w?e=lKGd8X)
 
 """)
 
