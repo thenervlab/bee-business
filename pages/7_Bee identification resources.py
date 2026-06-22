@@ -45,7 +45,7 @@ There's a lot out there in terms of scientific literature and bee taxonomy as we
 - [Revision of the blue-banded bees — *Amegilla (Notomegilla)* and *Amegilla (Zonamegilla)*](https://michaelbatley.github.io/Bee-ID-SM/main.htm) 
 - [Revision of the Australian Hylaeinae I (excluding Hylaeus*) — masked bees](https://uowmailedu-my.sharepoint.com/:b:/g/personal/jdorey_uow_edu_au/EaMFgpbF9yBLiwY7Fnzwwq8BDfiA6vO8gz8tIwyrr2GyYQ?e=1ln4qT)
 - [Revision of the Australian Hylaeinae II (the genus *Hylaeus*) — masked bees](https://uowmailedu-my.sharepoint.com/:b:/g/personal/jdorey_uow_edu_au/EQgp1CSgxsVFp99euFkcaOoBMyn-5RxdLOAJDAh880Paow?e=nXvkB1)
-- [A fodler for colleagues with other bee identification resources — Go into the "Other_BeeKeys" folder](https://uowmailedu-my.sharepoint.com/:f:/g/personal/jdorey_uow_edu_au/EqhUzRQAxmBKg8kIk1H9N_cBvpO1NeQtTNgRtVyWFBX1-w?e=lKGd8X)
+- [A folder for colleagues with other bee identification resources — Go into the "Other_BeeKeys" folder](https://uowmailedu-my.sharepoint.com/:f:/g/personal/jdorey_uow_edu_au/EqhUzRQAxmBKg8kIk1H9N_cBvpO1NeQtTNgRtVyWFBX1-w?e=lKGd8X)
 
 """)
 
